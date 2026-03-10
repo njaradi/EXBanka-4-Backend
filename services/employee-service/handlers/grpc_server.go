@@ -92,6 +92,28 @@ func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.Get
 	return &pb.GetEmployeeCredentialsResponse{Id: id, PasswordHash: passwordHash, Aktivan: aktivan, Dozvole: dozvole}, nil
 }
 
+func (s *EmployeeServer) GetEmployeeById(ctx context.Context, req *pb.GetEmployeeByIdRequest) (*pb.GetEmployeeByIdResponse, error) {
+	var e pb.Employee
+	var dozvole pq.StringArray
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
+		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
+		FROM employees WHERE id = $1`, req.Id,
+	).Scan(
+		&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
+		&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
+		&e.Departman, &e.Aktivan, &dozvole,
+	)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "employee not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	e.Dozvole = dozvole
+	return &pb.GetEmployeeByIdResponse{Employee: &e}, nil
+}
+
 func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmployeeRequest) (*pb.CreateEmployeeResponse, error) {
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `

@@ -67,9 +67,18 @@ message CreateEmployeeResponse {
   Employee employee = 1;
 }
 
+message GetEmployeeByIdRequest {
+  int64 id = 1;
+}
+
+message GetEmployeeByIdResponse {
+  Employee employee = 1;
+}
+
 service EmployeeService {
   rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
   rpc SearchEmployees(SearchEmployeesRequest) returns (SearchEmployeesResponse);
   rpc GetEmployeeCredentials(GetEmployeeCredentialsRequest) returns (GetEmployeeCredentialsResponse);
   rpc CreateEmployee(CreateEmployeeRequest) returns (CreateEmployeeResponse);
+  rpc GetEmployeeById(GetEmployeeByIdRequest) returns (GetEmployeeByIdResponse);
 }

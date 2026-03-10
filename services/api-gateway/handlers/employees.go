@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/exbanka/backend/shared/pb/employee"
@@ -45,6 +46,26 @@ func toEmployeeResponse(e *pb.Employee) employeeResponse {
 		Departman:     e.Departman,
 		Aktivan:       e.Aktivan,
 		Dozvole:       dozvole,
+	}
+}
+
+func GetEmployeeById(client pb.EmployeeServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+		resp, err := client.GetEmployeeById(context.Background(), &pb.GetEmployeeByIdRequest{Id: id})
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, toEmployeeResponse(resp.Employee))
 	}
 }
 
