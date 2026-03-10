@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/exbanka/backend/shared/pb/employee"
@@ -45,6 +46,87 @@ func toEmployeeResponse(e *pb.Employee) employeeResponse {
 		Departman:     e.Departman,
 		Aktivan:       e.Aktivan,
 		Dozvole:       dozvole,
+	}
+}
+
+func GetEmployeeById(client pb.EmployeeServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+		resp, err := client.GetEmployeeById(context.Background(), &pb.GetEmployeeByIdRequest{Id: id})
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, toEmployeeResponse(resp.Employee))
+	}
+}
+
+func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+		var req struct {
+			FirstName   string   `json:"first_name"    binding:"required"`
+			LastName    string   `json:"last_name"     binding:"required"`
+			DateOfBirth string   `json:"date_of_birth" binding:"required"`
+			Gender      string   `json:"gender"        binding:"required"`
+			Email       string   `json:"email"         binding:"required"`
+			PhoneNumber string   `json:"phone_number"  binding:"required"`
+			Address     string   `json:"address"       binding:"required"`
+			Username    string   `json:"username"      binding:"required"`
+			Position    string   `json:"position"      binding:"required"`
+			Department  string   `json:"department"    binding:"required"`
+			Active      bool     `json:"active"`
+			Permissions []string `json:"permissions"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if req.Permissions == nil {
+			req.Permissions = []string{}
+		}
+
+		resp, err := client.UpdateEmployee(context.Background(), &pb.UpdateEmployeeRequest{
+			Id:            id,
+			Ime:           req.FirstName,
+			Prezime:       req.LastName,
+			DatumRodjenja: req.DateOfBirth,
+			Pol:           req.Gender,
+			Email:         req.Email,
+			BrojTelefona:  req.PhoneNumber,
+			Adresa:        req.Address,
+			Username:      req.Username,
+			Pozicija:      req.Position,
+			Departman:     req.Department,
+			Aktivan:       req.Active,
+			Dozvole:       req.Permissions,
+		})
+		if err != nil {
+			switch status.Code(err) {
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
+			case codes.AlreadyExists:
+				c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
+			case codes.FailedPrecondition:
+				c.JSON(http.StatusUnprocessableEntity, gin.H{"error": status.Convert(err).Message()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+		c.JSON(http.StatusOK, toEmployeeResponse(resp.Employee))
 	}
 }
 

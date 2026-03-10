@@ -92,6 +92,75 @@ func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.Get
 	return &pb.GetEmployeeCredentialsResponse{Id: id, PasswordHash: passwordHash, Aktivan: aktivan, Dozvole: dozvole}, nil
 }
 
+func (s *EmployeeServer) GetEmployeeById(ctx context.Context, req *pb.GetEmployeeByIdRequest) (*pb.GetEmployeeByIdResponse, error) {
+	var e pb.Employee
+	var dozvole pq.StringArray
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
+		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
+		FROM employees WHERE id = $1`, req.Id,
+	).Scan(
+		&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
+		&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
+		&e.Departman, &e.Aktivan, &dozvole,
+	)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "employee not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	e.Dozvole = dozvole
+	return &pb.GetEmployeeByIdResponse{Employee: &e}, nil
+}
+
+func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmployeeRequest) (*pb.UpdateEmployeeResponse, error) {
+	// Activating an employee requires a password to be set first.
+	if req.Aktivan {
+		var pwd string
+		err := s.DB.QueryRowContext(ctx, `SELECT password FROM employees WHERE id = $1`, req.Id).Scan(&pwd)
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "employee not found")
+		}
+		if err != nil {
+			return nil, err
+		}
+		if pwd == "" {
+			return nil, status.Error(codes.FailedPrecondition, "cannot activate employee: no password set")
+		}
+	}
+
+	var e pb.Employee
+	var dozvole pq.StringArray
+	err := s.DB.QueryRowContext(ctx, `
+		UPDATE employees
+		SET ime=$2, prezime=$3, datum_rodjenja=$4::date, pol=$5, email=$6,
+		    broj_telefona=$7, adresa=$8, username=$9, pozicija=$10,
+		    departman=$11, aktivan=$12, dozvole=$13
+		WHERE id=$1
+		RETURNING id, ime, prezime, datum_rodjenja::text, pol, email,
+		          broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole`,
+		req.Id, req.Ime, req.Prezime, req.DatumRodjenja, req.Pol, req.Email,
+		req.BrojTelefona, req.Adresa, req.Username, req.Pozicija,
+		req.Departman, req.Aktivan, pq.StringArray(req.Dozvole),
+	).Scan(
+		&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
+		&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
+		&e.Departman, &e.Aktivan, &dozvole,
+	)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "employee not found")
+	}
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return nil, status.Error(codes.AlreadyExists, "email already exists")
+		}
+		return nil, err
+	}
+	e.Dozvole = dozvole
+	return &pb.UpdateEmployeeResponse{Employee: &e}, nil
+}
+
 func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmployeeRequest) (*pb.CreateEmployeeResponse, error) {
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `
