@@ -41,16 +41,16 @@ func main() {
 
 	rabbitmqURL := mustEnv("RABBITMQ_URL")
 	var conn *amqp.Connection
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 20; i++ {
 		conn, err = amqp.Dial(rabbitmqURL)
 		if err == nil {
 			break
 		}
-		log.Printf("RabbitMQ not ready (attempt %d/10): %v", i, err)
+		log.Printf("RabbitMQ not ready (attempt %d/20): %v", i, err)
 		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
-		log.Fatalf("failed to connect to RabbitMQ after 10 attempts: %v", err)
+		log.Fatalf("failed to connect to RabbitMQ after 20 attempts: %v", err)
 	}
 	defer conn.Close()
 

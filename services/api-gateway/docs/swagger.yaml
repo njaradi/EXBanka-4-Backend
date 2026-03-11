@@ -1,0 +1,523 @@
+basePath: /
+definitions:
+  handlers.AccessTokenResponse:
+    properties:
+      access_token:
+        type: string
+    type: object
+  handlers.ActivateRequest:
+    properties:
+      confirm_password:
+        type: string
+      password:
+        type: string
+      token:
+        type: string
+    required:
+    - confirm_password
+    - password
+    - token
+    type: object
+  handlers.CreateEmployeeRequest:
+    properties:
+      address:
+        example: Bulevar Kralja Aleksandra 73
+        type: string
+      date_of_birth:
+        example: "1990-01-15"
+        type: string
+      department:
+        example: Retail
+        type: string
+      email:
+        example: marko@exbanka.rs
+        type: string
+      first_name:
+        example: Marko
+        type: string
+      gender:
+        example: M
+        type: string
+      last_name:
+        example: Marković
+        type: string
+      phone_number:
+        example: "+381641234567"
+        type: string
+      position:
+        example: Teller
+        type: string
+      username:
+        example: mmarkovic
+        type: string
+    required:
+    - address
+    - date_of_birth
+    - department
+    - email
+    - first_name
+    - gender
+    - last_name
+    - phone_number
+    - position
+    - username
+    type: object
+  handlers.EmployeeListResponse:
+    properties:
+      employees:
+        items:
+          $ref: '#/definitions/handlers.employeeResponse'
+        type: array
+      total_count:
+        type: integer
+    type: object
+  handlers.LoginRequest:
+    properties:
+      password:
+        example: secret
+        type: string
+      username:
+        example: jdoe
+        type: string
+    type: object
+  handlers.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  handlers.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  handlers.UpdateEmployeeRequest:
+    properties:
+      active:
+        example: true
+        type: boolean
+      address:
+        example: Bulevar Kralja Aleksandra 73
+        type: string
+      date_of_birth:
+        example: "1990-01-15"
+        type: string
+      department:
+        example: Retail
+        type: string
+      email:
+        example: marko@exbanka.rs
+        type: string
+      first_name:
+        example: Marko
+        type: string
+      gender:
+        example: M
+        type: string
+      last_name:
+        example: Marković
+        type: string
+      permissions:
+        example:
+        - LOANS
+        items:
+          type: string
+        type: array
+      phone_number:
+        example: "+381641234567"
+        type: string
+      position:
+        example: Teller
+        type: string
+      username:
+        example: mmarkovic
+        type: string
+    required:
+    - address
+    - date_of_birth
+    - department
+    - email
+    - first_name
+    - gender
+    - last_name
+    - phone_number
+    - position
+    - username
+    type: object
+  handlers.employeeResponse:
+    properties:
+      adresa:
+        type: string
+      aktivan:
+        type: boolean
+      broj_telefona:
+        type: string
+      datum_rodjenja:
+        type: string
+      departman:
+        type: string
+      dozvole:
+        items:
+          type: string
+        type: array
+      email:
+        type: string
+      id:
+        type: integer
+      ime:
+        type: string
+      pol:
+        type: string
+      pozicija:
+        type: string
+      prezime:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: REST API gateway for EXBanka microservices.
+  title: EXBanka API Gateway
+  version: "1.0"
+paths:
+  /auth/activate:
+    post:
+      consumes:
+      - application/json
+      description: Activate a new employee account using an activation token and set
+        a password.
+      parameters:
+      - description: Activation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ActivateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Activate account
+      tags:
+      - auth
+  /employees:
+    get:
+      description: Retrieve a paginated list of all employees.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.EmployeeListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Create a new inactive employee and send an activation email.
+      parameters:
+      - description: New employee data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.employeeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create employee
+      tags:
+      - employees
+  /employees/{id}:
+    get:
+      description: Retrieve a single employee by their numeric ID.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.employeeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
+      tags:
+      - employees
+    put:
+      consumes:
+      - application/json
+      description: Update all fields of an existing employee.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated employee data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.employeeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update employee
+      tags:
+      - employees
+  /employees/search:
+    get:
+      description: Search employees by email, first name, last name, or position with
+        pagination.
+      parameters:
+      - description: Filter by email
+        in: query
+        name: email
+        type: string
+      - description: Filter by first name
+        in: query
+        name: ime
+        type: string
+      - description: Filter by last name
+        in: query
+        name: prezime
+        type: string
+      - description: Filter by position
+        in: query
+        name: pozicija
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.EmployeeListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Search employees
+      tags:
+      - employees
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with username and password, receive JWT tokens.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - auth
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new access token.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.AccessTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

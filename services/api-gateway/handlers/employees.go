@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// employeeResponse is the JSON representation of an employee.
 type employeeResponse struct {
 	Id            int64    `json:"id"`
 	Ime           string   `json:"ime"`
@@ -31,6 +32,42 @@ type employeeResponse struct {
 	Departman     string   `json:"departman"`
 	Aktivan       bool     `json:"aktivan"`
 	Dozvole       []string `json:"dozvole"`
+}
+
+// CreateEmployeeRequest is the request body for creating an employee.
+type CreateEmployeeRequest struct {
+	FirstName   string `json:"first_name"    binding:"required" example:"Marko"`
+	LastName    string `json:"last_name"     binding:"required" example:"Marković"`
+	DateOfBirth string `json:"date_of_birth" binding:"required" example:"1990-01-15"`
+	Gender      string `json:"gender"        binding:"required" example:"M"`
+	Email       string `json:"email"         binding:"required" example:"marko@exbanka.rs"`
+	PhoneNumber string `json:"phone_number"  binding:"required" example:"+381641234567"`
+	Address     string `json:"address"       binding:"required" example:"Bulevar Kralja Aleksandra 73"`
+	Username    string `json:"username"      binding:"required" example:"mmarkovic"`
+	Position    string `json:"position"      binding:"required" example:"Teller"`
+	Department  string `json:"department"    binding:"required" example:"Retail"`
+}
+
+// UpdateEmployeeRequest is the request body for updating an employee.
+type UpdateEmployeeRequest struct {
+	FirstName   string   `json:"first_name"    binding:"required" example:"Marko"`
+	LastName    string   `json:"last_name"     binding:"required" example:"Marković"`
+	DateOfBirth string   `json:"date_of_birth" binding:"required" example:"1990-01-15"`
+	Gender      string   `json:"gender"        binding:"required" example:"M"`
+	Email       string   `json:"email"         binding:"required" example:"marko@exbanka.rs"`
+	PhoneNumber string   `json:"phone_number"  binding:"required" example:"+381641234567"`
+	Address     string   `json:"address"       binding:"required" example:"Bulevar Kralja Aleksandra 73"`
+	Username    string   `json:"username"      binding:"required" example:"mmarkovic"`
+	Position    string   `json:"position"      binding:"required" example:"Teller"`
+	Department  string   `json:"department"    binding:"required" example:"Retail"`
+	Active      bool     `json:"active"        example:"true"`
+	Permissions []string `json:"permissions"   example:"LOANS"`
+}
+
+// EmployeeListResponse wraps a paginated list of employees.
+type EmployeeListResponse struct {
+	Employees  []employeeResponse `json:"employees"`
+	TotalCount int32              `json:"total_count"`
 }
 
 func toEmployeeResponse(e *pb.Employee) employeeResponse {
@@ -55,6 +92,18 @@ func toEmployeeResponse(e *pb.Employee) employeeResponse {
 	}
 }
 
+// GetEmployeeById godoc
+// @Summary      Get employee by ID
+// @Description  Retrieve a single employee by their numeric ID.
+// @Tags         employees
+// @Produce      json
+// @Param        id   path      int  true  "Employee ID"
+// @Success      200  {object}  employeeResponse
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /employees/{id} [get]
 func GetEmployeeById(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -77,6 +126,22 @@ func GetEmployeeById(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	}
 }
 
+// UpdateEmployee godoc
+// @Summary      Update employee
+// @Description  Update all fields of an existing employee.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "Employee ID"
+// @Param        body  body      UpdateEmployeeRequest true  "Updated employee data"
+// @Success      200   {object}  employeeResponse
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      409   {object}  map[string]string
+// @Failure      422   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /employees/{id} [put]
 func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -87,14 +152,14 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		var req struct {
 			FirstName   string   `json:"first_name"    binding:"required"`
 			LastName    string   `json:"last_name"     binding:"required"`
-			DateOfBirth string   `json:"date_of_birth" binding:"required"`
-			Gender      string   `json:"gender"        binding:"required"`
+			DateOfBirth string   `json:"date_of_birth"`
+			Gender      string   `json:"gender"`
 			Email       string   `json:"email"         binding:"required"`
-			PhoneNumber string   `json:"phone_number"  binding:"required"`
-			Address     string   `json:"address"       binding:"required"`
+			PhoneNumber string   `json:"phone_number"`
+			Address     string   `json:"address"`
 			Username    string   `json:"username"      binding:"required"`
-			Position    string   `json:"position"      binding:"required"`
-			Department  string   `json:"department"    binding:"required"`
+			Position    string   `json:"position"`
+			Department  string   `json:"department"`
 			Active      bool     `json:"active"`
 			Permissions []string `json:"permissions"`
 		}
@@ -144,6 +209,21 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	}
 }
 
+// SearchEmployees godoc
+// @Summary      Search employees
+// @Description  Search employees by email, first name, last name, or position with pagination.
+// @Tags         employees
+// @Produce      json
+// @Param        email     query     string  false  "Filter by email"
+// @Param        ime       query     string  false  "Filter by first name"
+// @Param        prezime   query     string  false  "Filter by last name"
+// @Param        pozicija  query     string  false  "Filter by position"
+// @Param        page      query     int     false  "Page number (default 1)"
+// @Param        page_size query     int     false  "Page size (default 20)"
+// @Success      200       {object}  EmployeeListResponse
+// @Failure      500       {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /employees/search [get]
 func SearchEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
@@ -170,6 +250,17 @@ func SearchEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	}
 }
 
+// GetEmployees godoc
+// @Summary      List all employees
+// @Description  Retrieve a paginated list of all employees.
+// @Tags         employees
+// @Produce      json
+// @Param        page      query     int  false  "Page number (default 1)"
+// @Param        page_size query     int  false  "Page size (default 20)"
+// @Success      200       {object}  EmployeeListResponse
+// @Failure      500       {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /employees [get]
 func GetEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
@@ -192,6 +283,19 @@ func GetEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	}
 }
 
+// CreateEmployee godoc
+// @Summary      Create employee
+// @Description  Create a new inactive employee and send an activation email.
+// @Tags         employees
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateEmployeeRequest  true  "New employee data"
+// @Success      201   {object}  employeeResponse
+// @Failure      400   {object}  map[string]string
+// @Failure      409   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /employees [post]
 func CreateEmployee(empClient pb.EmployeeServiceClient, authClient authpb.AuthServiceClient, emailClient emailpb.EmailServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
