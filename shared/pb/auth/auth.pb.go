@@ -23,7 +23,7 @@ const (
 
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -59,9 +59,9 @@ func (*LoginRequest) Descriptor() ([]byte, []int) {
 	return file_auth_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *LoginRequest) GetUsername() string {
+func (x *LoginRequest) GetEmail() string {
 	if x != nil {
-		return x.Username
+		return x.Email
 	}
 	return ""
 }

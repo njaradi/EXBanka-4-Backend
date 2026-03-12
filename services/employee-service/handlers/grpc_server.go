@@ -119,8 +119,8 @@ func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.Get
 	var aktivan bool
 	var dozvole pq.StringArray
 	err := s.DB.QueryRowContext(ctx,
-		`SELECT id, password, aktivan, dozvole FROM employees WHERE username = $1`,
-		req.Username,
+		`SELECT id, password, aktivan, dozvole FROM employees WHERE email = $1`,
+		req.Email,
 	).Scan(&id, &passwordHash, &aktivan, &dozvole)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "user not found")
