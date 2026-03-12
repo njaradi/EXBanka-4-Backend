@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	EmailService_SendActivationEmail_FullMethodName    = "/email.EmailService/SendActivationEmail"
-	EmailService_SendPasswordResetEmail_FullMethodName = "/email.EmailService/SendPasswordResetEmail"
+	EmailService_SendActivationEmail_FullMethodName          = "/email.EmailService/SendActivationEmail"
+	EmailService_SendPasswordResetEmail_FullMethodName       = "/email.EmailService/SendPasswordResetEmail"
+	EmailService_SendPasswordConfirmationEmail_FullMethodName = "/email.EmailService/SendPasswordConfirmationEmail"
 )
 
 // EmailServiceClient is the client API for EmailService service.
@@ -29,6 +30,7 @@ const (
 type EmailServiceClient interface {
 	SendActivationEmail(ctx context.Context, in *SendActivationEmailRequest, opts ...grpc.CallOption) (*SendActivationEmailResponse, error)
 	SendPasswordResetEmail(ctx context.Context, in *SendPasswordResetEmailRequest, opts ...grpc.CallOption) (*SendPasswordResetEmailResponse, error)
+	SendPasswordConfirmationEmail(ctx context.Context, in *SendActivationEmailRequest, opts ...grpc.CallOption) (*SendActivationEmailResponse, error)
 }
 
 type emailServiceClient struct {
@@ -59,12 +61,23 @@ func (c *emailServiceClient) SendPasswordResetEmail(ctx context.Context, in *Sen
 	return out, nil
 }
 
+func (c *emailServiceClient) SendPasswordConfirmationEmail(ctx context.Context, in *SendActivationEmailRequest, opts ...grpc.CallOption) (*SendActivationEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendActivationEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendPasswordConfirmationEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EmailServiceServer is the server API for EmailService service.
 // All implementations must embed UnimplementedEmailServiceServer
 // for forward compatibility.
 type EmailServiceServer interface {
 	SendActivationEmail(context.Context, *SendActivationEmailRequest) (*SendActivationEmailResponse, error)
 	SendPasswordResetEmail(context.Context, *SendPasswordResetEmailRequest) (*SendPasswordResetEmailResponse, error)
+	SendPasswordConfirmationEmail(context.Context, *SendActivationEmailRequest) (*SendActivationEmailResponse, error)
 	mustEmbedUnimplementedEmailServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedEmailServiceServer) SendActivationEmail(context.Context, *Sen
 }
 func (UnimplementedEmailServiceServer) SendPasswordResetEmail(context.Context, *SendPasswordResetEmailRequest) (*SendPasswordResetEmailResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendPasswordResetEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendPasswordConfirmationEmail(context.Context, *SendActivationEmailRequest) (*SendActivationEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendPasswordConfirmationEmail not implemented")
 }
 func (UnimplementedEmailServiceServer) mustEmbedUnimplementedEmailServiceServer() {}
 func (UnimplementedEmailServiceServer) testEmbeddedByValue()                      {}
@@ -138,6 +154,24 @@ func _EmailService_SendPasswordResetEmail_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EmailService_SendPasswordConfirmationEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendActivationEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendPasswordConfirmationEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendPasswordConfirmationEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendPasswordConfirmationEmail(ctx, req.(*SendActivationEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EmailService_ServiceDesc is the grpc.ServiceDesc for EmailService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendPasswordResetEmail",
 			Handler:    _EmailService_SendPasswordResetEmail_Handler,
+		},
+		{
+			MethodName: "SendPasswordConfirmationEmail",
+			Handler:    _EmailService_SendPasswordConfirmationEmail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

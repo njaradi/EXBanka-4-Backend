@@ -56,7 +56,7 @@ func sendEmail(cfg SMTPConfig, tmpl *template.Template, msg ActivationMessage) e
 	m := gomail.NewMessage()
 	m.SetHeader("From", cfg.From)
 	m.SetHeader("To", msg.Email)
-	m.SetHeader("Subject", "Activate your EXBanka account")
+	m.SetHeader("Subject", "Activate your AnkaBanka account")
 	m.SetBody("text/html", buf.String())
 
 	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
@@ -105,7 +105,51 @@ func sendPasswordResetEmail(cfg SMTPConfig, tmpl *template.Template, msg Passwor
 	m := gomail.NewMessage()
 	m.SetHeader("From", cfg.From)
 	m.SetHeader("To", msg.Email)
-	m.SetHeader("Subject", "Reset your EXBanka password")
+	m.SetHeader("Subject", "Reset your AnkaBanka password")
+	m.SetBody("text/html", buf.String())
+
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
+}
+
+func ConsumePasswordConfirmation(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	msgs, err := ch.Consume(ConfirmQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start password confirmation consumer: %v", err)
+	}
+
+	log.Println("password confirmation email consumer started, waiting for messages")
+
+	for d := range msgs {
+		var msg PasswordConfirmationMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode password confirmation message: %v", err)
+			d.Ack(false)
+			continue
+		}
+
+		if err := sendPasswordConfirmationEmail(cfg, tmpl, msg); err != nil {
+			log.Printf("failed to send password confirmation email to %s: %v", msg.Email, err)
+		} else {
+			log.Printf("password confirmation email sent to %s", msg.Email)
+		}
+
+		d.Ack(false)
+	}
+}
+
+func sendPasswordConfirmationEmail(cfg SMTPConfig, tmpl *template.Template, msg PasswordConfirmationMessage) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, map[string]string{
+		"FirstName": msg.FirstName,
+	}); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", msg.Email)
+	m.SetHeader("Subject", "Your AnkaBanka password has been set")
 	m.SetBody("text/html", buf.String())
 
 	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)

@@ -45,3 +45,17 @@ func (s *EmailServer) SendPasswordResetEmail(_ context.Context, req *pb.SendPass
 	}
 	return &pb.SendPasswordResetEmailResponse{}, nil
 }
+
+func (s *EmailServer) SendPasswordConfirmationEmail(_ context.Context, req *pb.SendActivationEmailRequest) (*pb.SendActivationEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishPasswordConfirmation(queue.PasswordConfirmationMessage{
+		Email:     req.Email,
+		FirstName: req.FirstName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendActivationEmailResponse{}, nil
+}

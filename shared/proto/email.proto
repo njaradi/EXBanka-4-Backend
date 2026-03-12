@@ -20,6 +20,8 @@ message SendPasswordResetEmailRequest {
 message SendPasswordResetEmailResponse {}
 
 service EmailService {
-  rpc SendActivationEmail(SendActivationEmailRequest)       returns (SendActivationEmailResponse);
-  rpc SendPasswordResetEmail(SendPasswordResetEmailRequest) returns (SendPasswordResetEmailResponse);
+  rpc SendActivationEmail(SendActivationEmailRequest)           returns (SendActivationEmailResponse);
+  rpc SendPasswordResetEmail(SendPasswordResetEmailRequest)     returns (SendPasswordResetEmailResponse);
+  // Reuses SendActivationEmailRequest (email + first_name); activation_link left empty.
+  rpc SendPasswordConfirmationEmail(SendActivationEmailRequest) returns (SendActivationEmailResponse);
 }

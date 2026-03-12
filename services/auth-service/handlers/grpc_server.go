@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	pb_auth "github.com/exbanka/backend/shared/pb/auth"
+	pb_email "github.com/exbanka/backend/shared/pb/email"
 	pb_emp "github.com/exbanka/backend/shared/pb/employee"
 )
 
@@ -24,6 +25,7 @@ type AuthServer struct {
 	pb_auth.UnimplementedAuthServiceServer
 	DB             *sql.DB
 	EmployeeClient pb_emp.EmployeeServiceClient
+	EmailClient    pb_email.EmailServiceClient
 }
 
 func (s *AuthServer) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb_auth.LoginResponse, error) {
@@ -200,6 +202,18 @@ func (s *AuthServer) ActivateAccount(ctx context.Context, req *pb_auth.ActivateA
 	if _, err := s.DB.ExecContext(ctx, `DELETE FROM activation_tokens WHERE token = $1`, req.Token); err != nil {
 		log.Printf("failed to delete used activation token: %v", err)
 	}
+
+	emp := empResp.Employee
+	go func() {
+		_, err := s.EmailClient.SendPasswordConfirmationEmail(context.Background(), &pb_email.SendActivationEmailRequest{
+			Email:     emp.Email,
+			FirstName: emp.Ime,
+		})
+		if err != nil {
+			log.Printf("failed to send password confirmation email: %v", err)
+		}
+	}()
+
 	return &pb_auth.ActivateAccountResponse{}, nil
 }
 

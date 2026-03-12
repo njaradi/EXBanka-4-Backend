@@ -10,6 +10,7 @@ import (
 	authdb "github.com/exbanka/backend/services/auth-service/db"
 	"github.com/exbanka/backend/services/auth-service/handlers"
 	pb_auth "github.com/exbanka/backend/shared/pb/auth"
+	pb_email "github.com/exbanka/backend/shared/pb/email"
 	pb_emp "github.com/exbanka/backend/shared/pb/employee"
 )
 
@@ -28,6 +29,14 @@ func main() {
 
 	employeeClient := pb_emp.NewEmployeeServiceClient(empConn)
 
+	emailConn, err := grpc.NewClient("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to email-service: %v", err)
+	}
+	defer emailConn.Close()
+
+	emailClient := pb_email.NewEmailServiceClient(emailConn)
+
 	lis, err := net.Listen("tcp", ":50052")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -37,6 +46,7 @@ func main() {
 	pb_auth.RegisterAuthServiceServer(s, &handlers.AuthServer{
 		DB:             database,
 		EmployeeClient: employeeClient,
+		EmailClient:    emailClient,
 	})
 
 	log.Println("auth-service listening on :50052")
