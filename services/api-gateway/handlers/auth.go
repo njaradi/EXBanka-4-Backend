@@ -15,7 +15,7 @@ import (
 
 // LoginRequest contains credentials for login.
 type LoginRequest struct {
-	Username string `json:"username" example:"jdoe"`
+	Email    string `json:"email"    example:"jdoe@ankabanka.com"`
 	Password string `json:"password" example:"secret"`
 }
 
@@ -44,7 +44,7 @@ type ActivateRequest struct {
 
 // Login godoc
 // @Summary      Login
-// @Description  Authenticate with username and password, receive JWT tokens.
+// @Description  Authenticate with email and password, receive JWT tokens.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -56,7 +56,7 @@ type ActivateRequest struct {
 func Login(client pb.AuthServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
-			Username string `json:"username"`
+			Email    string `json:"email"`
 			Password string `json:"password"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,7 +67,7 @@ func Login(client pb.AuthServiceClient) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 		defer cancel()
 		resp, err := client.Login(ctx, &pb.LoginRequest{
-			Username: req.Username,
+			Email:    req.Email,
 			Password: req.Password,
 		})
 		if err != nil {

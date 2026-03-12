@@ -28,7 +28,7 @@ type AuthServer struct {
 
 func (s *AuthServer) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb_auth.LoginResponse, error) {
 	creds, err := s.EmployeeClient.GetEmployeeCredentials(ctx, &pb_emp.GetEmployeeCredentialsRequest{
-		Username: req.Username,
+		Email: req.Email,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
@@ -51,12 +51,12 @@ func (s *AuthServer) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb_
 	}
 	emp := empResp.Employee
 
-	accessToken, err := generateToken(creds.Id, req.Username, "access", creds.Dozvole, emp.Ime, emp.Prezime, emp.Email, 15*time.Minute)
+	accessToken, err := generateToken(creds.Id, emp.Email, "access", creds.Dozvole, emp.Ime, emp.Prezime, emp.Email, 15*time.Minute)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	refreshToken, err := generateToken(creds.Id, req.Username, "refresh", creds.Dozvole, emp.Ime, emp.Prezime, emp.Email, 7*24*time.Hour)
+	refreshToken, err := generateToken(creds.Id, emp.Email, "refresh", creds.Dozvole, emp.Ime, emp.Prezime, emp.Email, 7*24*time.Hour)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}

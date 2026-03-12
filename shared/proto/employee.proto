@@ -47,7 +47,7 @@ message SearchEmployeesResponse {
 }
 
 message GetEmployeeCredentialsRequest {
-  string username = 1;
+  string email = 1;
 }
 
 message GetEmployeeCredentialsResponse {

@@ -403,7 +403,7 @@ func (x *SearchEmployeesResponse) GetTotalCount() int32 {
 
 type GetEmployeeCredentialsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -438,9 +438,9 @@ func (*GetEmployeeCredentialsRequest) Descriptor() ([]byte, []int) {
 	return file_employee_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetEmployeeCredentialsRequest) GetUsername() string {
+func (x *GetEmployeeCredentialsRequest) GetEmail() string {
 	if x != nil {
-		return x.Username
+		return x.Email
 	}
 	return ""
 }

@@ -2,35 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Activate your EXBanka account</title>
+  <title>Activate your AnkaBanka account</title>
   <style>
-    body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .header { background-color: #1a3c6e; padding: 32px; text-align: center; }
-    .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
-    .body { padding: 32px; color: #333333; }
-    .body p { line-height: 1.6; }
-    .btn { display: inline-block; margin-top: 24px; padding: 14px 28px; background-color: #1a3c6e; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; }
-    .footer { padding: 16px 32px; background-color: #f4f4f4; text-align: center; font-size: 12px; color: #999999; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .header { background-color: #ffffff; padding: 32px; text-align: center; border-bottom: 3px solid #7c3aed; }
+    .header h1 { color: #7c3aed; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+    .header p { color: #a78bfa; margin: 6px 0 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+    .body { padding: 40px 32px; color: #374151; }
+    .body p { line-height: 1.7; margin: 0 0 16px; }
+    .btn-wrap { text-align: center; margin: 32px 0; }
+    .btn { display: inline-block; padding: 14px 36px; background-color: #7c3aed; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; letter-spacing: 0.5px; }
+    .btn:hover { background-color: #6d28d9; }
+    .link-fallback { background: #f5f3ff; border-left: 3px solid #7c3aed; padding: 12px 16px; border-radius: 4px; word-break: break-all; }
+    .link-fallback a { color: #7c3aed; font-size: 13px; }
+    .notice { font-size: 13px; color: #9ca3af; margin-top: 24px; }
+    .footer { padding: 20px 32px; background-color: #f5f3ff; text-align: center; font-size: 12px; color: #a78bfa; border-top: 1px solid #ede9fe; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>EXBanka</h1>
+      <h1>AnkaBanka</h1>
+      <p>Employee Portal</p>
     </div>
     <div class="body">
       <p>Hello, <strong>{{.FirstName}}</strong>,</p>
-      <p>Your EXBanka employee account has been created. Click the button below to set your password and activate your account.</p>
-      <p>
+      <p>Welcome to AnkaBanka! Your employee account has been created. Click the button below to set your password and activate your account.</p>
+      <div class="btn-wrap">
         <a class="btn" href="{{.ActivationLink}}">Activate Account</a>
-      </p>
-      <p>If the button does not work, copy and paste the following link into your browser:</p>
-      <p><a href="{{.ActivationLink}}">{{.ActivationLink}}</a></p>
-      <p>If you did not expect this email, please ignore it.</p>
+      </div>
+      <p>If the button does not work, copy and paste the link below into your browser:</p>
+      <div class="link-fallback">
+        <a href="{{.ActivationLink}}">{{.ActivationLink}}</a>
+      </div>
+      <p class="notice">If you did not expect this email, please ignore it.</p>
     </div>
     <div class="footer">
-      &copy; EXBanka. All rights reserved.
+      &copy; AnkaBanka. All rights reserved.
     </div>
   </div>
 </body>
