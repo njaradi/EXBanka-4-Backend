@@ -32,6 +32,7 @@ type employeeResponse struct {
 	Departman     string   `json:"departman"`
 	Aktivan       bool     `json:"aktivan"`
 	Dozvole       []string `json:"dozvole"`
+	Jmbg          string   `json:"jmbg"`
 }
 
 // CreateEmployeeRequest is the request body for creating an employee.
@@ -46,6 +47,7 @@ type CreateEmployeeRequest struct {
 	Username    string `json:"username"      binding:"required" example:"mmarkovic"`
 	Position    string `json:"position"      binding:"required" example:"Teller"`
 	Department  string `json:"department"    binding:"required" example:"Retail"`
+	Jmbg        string `json:"jmbg"          binding:"required" example:"0101990710006"`
 }
 
 // UpdateEmployeeRequest is the request body for updating an employee.
@@ -62,6 +64,7 @@ type UpdateEmployeeRequest struct {
 	Department  string   `json:"department"    binding:"required" example:"Retail"`
 	Active      bool     `json:"active"        example:"true"`
 	Permissions []string `json:"permissions"   example:"LOANS"`
+	Jmbg        string   `json:"jmbg"          example:"0101990710006"`
 }
 
 // EmployeeListResponse wraps a paginated list of employees.
@@ -89,6 +92,7 @@ func toEmployeeResponse(e *pb.Employee) employeeResponse {
 		Departman:     e.Departman,
 		Aktivan:       e.Aktivan,
 		Dozvole:       dozvole,
+		Jmbg:          e.Jmbg,
 	}
 }
 
@@ -162,6 +166,7 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 			Department  string   `json:"department"`
 			Active      bool     `json:"active"`
 			Permissions []string `json:"permissions"`
+			Jmbg        string   `json:"jmbg"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -191,6 +196,7 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 			Departman:     req.Department,
 			Aktivan:       req.Active,
 			Dozvole:       req.Permissions,
+			Jmbg:          req.Jmbg,
 		})
 		if err != nil {
 			switch status.Code(err) {
@@ -309,6 +315,7 @@ func CreateEmployee(empClient pb.EmployeeServiceClient, authClient authpb.AuthSe
 			Username    string `json:"username"      binding:"required"`
 			Position    string `json:"position"      binding:"required"`
 			Department  string `json:"department"    binding:"required"`
+			Jmbg        string `json:"jmbg"          binding:"required"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -332,6 +339,7 @@ func CreateEmployee(empClient pb.EmployeeServiceClient, authClient authpb.AuthSe
 			Username:      req.Username,
 			Pozicija:      req.Position,
 			Departman:     req.Department,
+			Jmbg:          req.Jmbg,
 		})
 		if err != nil {
 			if status.Code(err) == codes.AlreadyExists {

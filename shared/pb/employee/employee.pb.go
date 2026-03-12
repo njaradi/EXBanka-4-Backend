@@ -36,6 +36,7 @@ type Employee struct {
 	Departman     string                 `protobuf:"bytes,11,opt,name=departman,proto3" json:"departman,omitempty"`
 	Aktivan       bool                   `protobuf:"varint,12,opt,name=aktivan,proto3" json:"aktivan,omitempty"`
 	Dozvole       []string               `protobuf:"bytes,13,rep,name=dozvole,proto3" json:"dozvole,omitempty"`
+	Jmbg          string                 `protobuf:"bytes,14,opt,name=jmbg,proto3" json:"jmbg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -159,6 +160,13 @@ func (x *Employee) GetDozvole() []string {
 		return x.Dozvole
 	}
 	return nil
+}
+
+func (x *Employee) GetJmbg() string {
+	if x != nil {
+		return x.Jmbg
+	}
+	return ""
 }
 
 type GetAllEmployeesRequest struct {
@@ -525,6 +533,7 @@ type CreateEmployeeRequest struct {
 	Username      string                 `protobuf:"bytes,8,opt,name=username,proto3" json:"username,omitempty"`
 	Pozicija      string                 `protobuf:"bytes,9,opt,name=pozicija,proto3" json:"pozicija,omitempty"`
 	Departman     string                 `protobuf:"bytes,10,opt,name=departman,proto3" json:"departman,omitempty"`
+	Jmbg          string                 `protobuf:"bytes,11,opt,name=jmbg,proto3" json:"jmbg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -625,6 +634,13 @@ func (x *CreateEmployeeRequest) GetPozicija() string {
 func (x *CreateEmployeeRequest) GetDepartman() string {
 	if x != nil {
 		return x.Departman
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetJmbg() string {
+	if x != nil {
+		return x.Jmbg
 	}
 	return ""
 }
@@ -776,6 +792,7 @@ type UpdateEmployeeRequest struct {
 	Departman     string                 `protobuf:"bytes,11,opt,name=departman,proto3" json:"departman,omitempty"`
 	Aktivan       bool                   `protobuf:"varint,12,opt,name=aktivan,proto3" json:"aktivan,omitempty"`
 	Dozvole       []string               `protobuf:"bytes,13,rep,name=dozvole,proto3" json:"dozvole,omitempty"`
+	Jmbg          string                 `protobuf:"bytes,14,opt,name=jmbg,proto3" json:"jmbg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -899,6 +916,13 @@ func (x *UpdateEmployeeRequest) GetDozvole() []string {
 		return x.Dozvole
 	}
 	return nil
+}
+
+func (x *UpdateEmployeeRequest) GetJmbg() string {
+	if x != nil {
+		return x.Jmbg
+	}
+	return ""
 }
 
 type UpdateEmployeeResponse struct {
@@ -1229,7 +1253,7 @@ var File_employee_proto protoreflect.FileDescriptor
 
 const file_employee_proto_rawDesc = "" +
 	"\n" +
-	"\x0eemployee.proto\x12\bemployee\"\xdc\x02\n" +
+	"\x0eemployee.proto\x12\bemployee\"\xf0\x02\n" +
 	"\bEmployee\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x10\n" +
 	"\x03ime\x18\x02 \x01(\tR\x03ime\x12\x18\n" +
@@ -1244,7 +1268,7 @@ const file_employee_proto_rawDesc = "" +
 	" \x01(\tR\bpozicija\x12\x1c\n" +
 	"\tdepartman\x18\v \x01(\tR\tdepartman\x12\x18\n" +
 	"\aaktivan\x18\f \x01(\bR\aaktivan\x12\x18\n" +
-	"\adozvole\x18\r \x03(\tR\adozvole\"I\n" +
+	"\adozvole\x18\r \x03(\tR\adozvole\x12\x12\n\x04jmbg\x18\x0e \x01(\tR\x04jmbg\"I\n" +
 	"\x16GetAllEmployeesRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"l\n" +
@@ -1269,7 +1293,7 @@ const file_employee_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12#\n" +
 	"\rpassword_hash\x18\x02 \x01(\tR\fpasswordHash\x12\x18\n" +
 	"\adozvole\x18\x03 \x03(\tR\adozvole\x12\x18\n" +
-	"\aaktivan\x18\x04 \x01(\bR\aaktivan\"\xa5\x02\n" +
+	"\aaktivan\x18\x04 \x01(\bR\aaktivan\"\xb9\x02\n" +
 	"\x15CreateEmployeeRequest\x12\x10\n" +
 	"\x03ime\x18\x01 \x01(\tR\x03ime\x12\x18\n" +
 	"\aprezime\x18\x02 \x01(\tR\aprezime\x12%\n" +
@@ -1281,13 +1305,13 @@ const file_employee_proto_rawDesc = "" +
 	"\busername\x18\b \x01(\tR\busername\x12\x1a\n" +
 	"\bpozicija\x18\t \x01(\tR\bpozicija\x12\x1c\n" +
 	"\tdepartman\x18\n" +
-	" \x01(\tR\tdepartman\"H\n" +
+	" \x01(\tR\tdepartman\x12\x12\n\x04jmbg\x18\x0b \x01(\tR\x04jmbg\"H\n" +
 	"\x16CreateEmployeeResponse\x12.\n" +
 	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"(\n" +
 	"\x16GetEmployeeByIdRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\"I\n" +
 	"\x17GetEmployeeByIdResponse\x12.\n" +
-	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"\xe9\x02\n" +
+	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"\xfd\x02\n" +
 	"\x15UpdateEmployeeRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x10\n" +
 	"\x03ime\x18\x02 \x01(\tR\x03ime\x12\x18\n" +
@@ -1302,7 +1326,7 @@ const file_employee_proto_rawDesc = "" +
 	" \x01(\tR\bpozicija\x12\x1c\n" +
 	"\tdepartman\x18\v \x01(\tR\tdepartman\x12\x18\n" +
 	"\aaktivan\x18\f \x01(\bR\aaktivan\x12\x18\n" +
-	"\adozvole\x18\r \x03(\tR\adozvole\"H\n" +
+	"\adozvole\x18\r \x03(\tR\adozvole\x12\x12\n\x04jmbg\x18\x0e \x01(\tR\x04jmbg\"H\n" +
 	"\x16UpdateEmployeeResponse\x12.\n" +
 	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"_\n" +
 	"\x17ActivateEmployeeRequest\x12\x1f\n" +

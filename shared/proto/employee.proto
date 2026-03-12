@@ -18,6 +18,7 @@ message Employee {
   string departman       = 11;
   bool   aktivan         = 12;
   repeated string dozvole = 13;
+  string jmbg            = 14;
 }
 
 // password is intentionally excluded — never returned over the API
@@ -68,6 +69,7 @@ message CreateEmployeeRequest {
   string username       = 8;
   string pozicija       = 9;
   string departman      = 10;
+  string jmbg           = 11;
 }
 
 message CreateEmployeeResponse {
@@ -96,6 +98,7 @@ message UpdateEmployeeRequest {
   string          departman      = 11;
   bool            aktivan        = 12;
   repeated string dozvole        = 13;
+  string          jmbg           = 14;
 }
 
 message UpdateEmployeeResponse {

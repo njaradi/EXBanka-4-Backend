@@ -41,7 +41,7 @@ func (s *EmployeeServer) GetAllEmployees(ctx context.Context, req *pb.GetAllEmpl
 
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
-		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
+		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole, jmbg
 		FROM employees
 		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *EmployeeServer) GetAllEmployees(ctx context.Context, req *pb.GetAllEmpl
 		if err := rows.Scan(
 			&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
 			&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
-			&e.Departman, &e.Aktivan, &dozvole,
+			&e.Departman, &e.Aktivan, &dozvole, &e.Jmbg,
 		); err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
-		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
+		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole, jmbg
 		FROM employees
 		WHERE ($1 = '' OR email    ILIKE '%' || $1 || '%')
 		  AND ($2 = '' OR ime      ILIKE '%' || $2 || '%')
@@ -103,7 +103,7 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 		if err := rows.Scan(
 			&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
 			&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
-			&e.Departman, &e.Aktivan, &dozvole,
+			&e.Departman, &e.Aktivan, &dozvole, &e.Jmbg,
 		); err != nil {
 			return nil, err
 		}
@@ -136,12 +136,12 @@ func (s *EmployeeServer) GetEmployeeById(ctx context.Context, req *pb.GetEmploye
 	var dozvole pq.StringArray
 	err := s.DB.QueryRowContext(ctx, `
 		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
-		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
+		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole, jmbg
 		FROM employees WHERE id = $1`, req.Id,
 	).Scan(
 		&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
 		&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
-		&e.Departman, &e.Aktivan, &dozvole,
+		&e.Departman, &e.Aktivan, &dozvole, &e.Jmbg,
 	)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "employee not found")
@@ -175,17 +175,17 @@ func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmplo
 		UPDATE employees
 		SET ime=$2, prezime=$3, datum_rodjenja=$4::date, pol=$5, email=$6,
 		    broj_telefona=$7, adresa=$8, username=$9, pozicija=$10,
-		    departman=$11, aktivan=$12, dozvole=$13
+		    departman=$11, aktivan=$12, dozvole=$13, jmbg=$14
 		WHERE id=$1
 		RETURNING id, ime, prezime, datum_rodjenja::text, pol, email,
-		          broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole`,
+		          broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole, jmbg`,
 		req.Id, req.Ime, req.Prezime, req.DatumRodjenja, req.Pol, req.Email,
 		req.BrojTelefona, req.Adresa, req.Username, req.Pozicija,
-		req.Departman, req.Aktivan, pq.StringArray(req.Dozvole),
+		req.Departman, req.Aktivan, pq.StringArray(req.Dozvole), req.Jmbg,
 	).Scan(
 		&e.Id, &e.Ime, &e.Prezime, &e.DatumRodjenja, &e.Pol, &e.Email,
 		&e.BrojTelefona, &e.Adresa, &e.Username, &e.Pozicija,
-		&e.Departman, &e.Aktivan, &dozvole,
+		&e.Departman, &e.Aktivan, &dozvole, &e.Jmbg,
 	)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "employee not found")
@@ -195,6 +195,8 @@ func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmplo
 			switch pqErr.Constraint {
 			case "employees_username_key":
 				return nil, status.Error(codes.AlreadyExists, "username already exists")
+			case "employees_jmbg_key":
+				return nil, status.Error(codes.AlreadyExists, "jmbg already exists")
 			default:
 				return nil, status.Error(codes.AlreadyExists, "email already exists")
 			}
@@ -264,17 +266,19 @@ func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmplo
 	err := s.DB.QueryRowContext(ctx, `
 		INSERT INTO employees
 			(ime, prezime, datum_rodjenja, pol, email, broj_telefona, adresa, username,
-			 password, pozicija, departman, aktivan, dozvole)
-		VALUES ($1, $2, $3::date, $4, $5, $6, $7, $8, '', $9, $10, false, '{}')
+			 password, pozicija, departman, aktivan, dozvole, jmbg)
+		VALUES ($1, $2, $3::date, $4, $5, $6, $7, $8, '', $9, $10, false, '{}', $11)
 		RETURNING id`,
 		req.Ime, req.Prezime, req.DatumRodjenja, req.Pol, req.Email,
-		req.BrojTelefona, req.Adresa, req.Username, req.Pozicija, req.Departman,
+		req.BrojTelefona, req.Adresa, req.Username, req.Pozicija, req.Departman, req.Jmbg,
 	).Scan(&id)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 			switch pqErr.Constraint {
 			case "employees_username_key":
 				return nil, status.Error(codes.AlreadyExists, "username already exists")
+			case "employees_jmbg_key":
+				return nil, status.Error(codes.AlreadyExists, "jmbg already exists")
 			default:
 				return nil, status.Error(codes.AlreadyExists, "email already exists")
 			}
@@ -296,6 +300,7 @@ func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmplo
 			Departman:     req.Departman,
 			Aktivan:       false,
 			Dozvole:       []string{},
+			Jmbg:          req.Jmbg,
 		},
 	}, nil
 }
