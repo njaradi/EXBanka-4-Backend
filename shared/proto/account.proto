@@ -57,7 +57,43 @@ message GetMyAccountsResponse {
   repeated AccountSummary accounts = 1;
 }
 
+message GetAccountRequest {
+  int64 account_id = 1;
+  int64 owner_id   = 2;
+}
+
+message AccountDetails {
+  int64  id                = 1;
+  string account_name      = 2;
+  string account_number    = 3;
+  string owner             = 4;
+  double balance           = 5;
+  double available_balance = 6;
+  double reserved_funds    = 7;
+  string currency_code     = 8;
+  string status            = 9;
+  string account_type      = 10;
+  double daily_limit       = 11;
+  double monthly_limit     = 12;
+  double daily_spent       = 13;
+  double monthly_spent     = 14;
+}
+
+message GetAccountResponse {
+  AccountDetails account = 1;
+}
+
+message RenameAccountRequest {
+  int64  account_id    = 1;
+  int64  owner_id      = 2;
+  string new_name      = 3;
+}
+
+message RenameAccountResponse {}
+
 service AccountService {
-  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
-  rpc GetMyAccounts(GetMyAccountsRequest)  returns (GetMyAccountsResponse);
+  rpc CreateAccount(CreateAccountRequest)   returns (CreateAccountResponse);
+  rpc GetMyAccounts(GetMyAccountsRequest)   returns (GetMyAccountsResponse);
+  rpc GetAccount(GetAccountRequest)         returns (GetAccountResponse);
+  rpc RenameAccount(RenameAccountRequest)   returns (RenameAccountResponse);
 }

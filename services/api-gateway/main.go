@@ -64,6 +64,8 @@ func main() {
 	r.PUT("/employees/:id", middleware.RequireRole("ADMIN"), handlers.UpdateEmployee(employeeClient))
 	r.POST("/employees", middleware.RequireRole("ADMIN"), handlers.CreateEmployee(employeeClient, authClient, emailClient))
 	r.GET("/api/accounts/my", handlers.GetMyAccounts(accountClient))
+	r.GET("/api/accounts/:accountId", handlers.GetAccount(accountClient))
+	r.PUT("/api/accounts/:accountId/name", handlers.RenameAccount(accountClient))
 	r.POST("/api/accounts/create", middleware.RequireRole("EMPLOYEE"), handlers.CreateAccount(accountClient))
 	r.POST("/login", handlers.Login(authClient))
 	r.POST("/refresh", handlers.Refresh(authClient))

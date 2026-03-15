@@ -76,6 +76,83 @@ func (s *AccountServer) GetMyAccounts(ctx context.Context, req *pb.GetMyAccounts
 	return &pb.GetMyAccountsResponse{Accounts: summaries}, nil
 }
 
+func (s *AccountServer) GetAccount(ctx context.Context, req *pb.GetAccountRequest) (*pb.GetAccountResponse, error) {
+	var a pb.AccountDetails
+	var currencyID int64
+	var ownerID int64
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, account_name, account_number, owner_id, balance, available_balance,
+		       balance - available_balance AS reserved_funds,
+		       currency_id, status, account_type,
+		       COALESCE(daily_limit, 0), COALESCE(monthly_limit, 0),
+		       daily_spent, monthly_spent
+		FROM accounts WHERE id = $1`, req.AccountId,
+	).Scan(&a.Id, &a.AccountName, &a.AccountNumber, &ownerID,
+		&a.Balance, &a.AvailableBalance, &a.ReservedFunds,
+		&currencyID, &a.Status, &a.AccountType,
+		&a.DailyLimit, &a.MonthlyLimit, &a.DailySpent, &a.MonthlySpent)
+	if err == sql.ErrNoRows {
+		return nil, status.Errorf(codes.NotFound, "account %d not found", req.AccountId)
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query account: %v", err)
+	}
+	if ownerID != req.OwnerId {
+		return nil, status.Errorf(codes.PermissionDenied, "account does not belong to this user")
+	}
+
+	// Resolve currency code from exchange_db
+	_ = s.ExchangeDB.QueryRowContext(ctx, `SELECT code FROM currencies WHERE id = $1`, currencyID).Scan(&a.CurrencyCode)
+
+	// Resolve owner name from client_db
+	var firstName, lastName string
+	if err := s.ClientDB.QueryRowContext(ctx,
+		`SELECT first_name, last_name FROM clients WHERE id = $1`, ownerID,
+	).Scan(&firstName, &lastName); err == nil {
+		a.Owner = firstName + " " + lastName
+	}
+
+	return &pb.GetAccountResponse{Account: &a}, nil
+}
+
+func (s *AccountServer) RenameAccount(ctx context.Context, req *pb.RenameAccountRequest) (*pb.RenameAccountResponse, error) {
+	// Verify ownership and get current name
+	var currentName string
+	var ownerID int64
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT account_name, owner_id FROM accounts WHERE id = $1`, req.AccountId,
+	).Scan(&currentName, &ownerID)
+	if err == sql.ErrNoRows {
+		return nil, status.Errorf(codes.NotFound, "account %d not found", req.AccountId)
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query account: %v", err)
+	}
+	if ownerID != req.OwnerId {
+		return nil, status.Errorf(codes.PermissionDenied, "account does not belong to this user")
+	}
+	if req.NewName == currentName {
+		return nil, status.Errorf(codes.InvalidArgument, "new name must differ from current name")
+	}
+
+	// Check no other account of this owner has the same name
+	var conflict int
+	_ = s.DB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM accounts WHERE owner_id = $1 AND account_name = $2 AND id != $3`,
+		req.OwnerId, req.NewName, req.AccountId,
+	).Scan(&conflict)
+	if conflict > 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "another account with this name already exists")
+	}
+
+	_, err = s.DB.ExecContext(ctx,
+		`UPDATE accounts SET account_name = $1 WHERE id = $2`, req.NewName, req.AccountId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to rename account: %v", err)
+	}
+	return &pb.RenameAccountResponse{}, nil
+}
+
 // accountTypeCode maps account type string to 2-digit code used in account number generation.
 func accountTypeCode(accountType string) string {
 	switch accountType {
