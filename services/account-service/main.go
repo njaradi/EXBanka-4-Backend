@@ -7,7 +7,9 @@ import (
 	acdb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/account-service/db"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/account-service/handlers"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -29,6 +31,13 @@ func main() {
 	}
 	defer exchangeDB.Close()
 
+	emailConn, err := grpc.NewClient("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to email-service: %v", err)
+	}
+	defer emailConn.Close()
+	emailClient := pb_email.NewEmailServiceClient(emailConn)
+
 	lis, err := net.Listen("tcp", ":50054")
 	if err != nil {
 		log.Fatalf("failed to listen on :50054: %v", err)
@@ -36,9 +45,10 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterAccountServiceServer(grpcServer, &handlers.AccountServer{
-		DB:         database,
-		ClientDB:   clientDB,
-		ExchangeDB: exchangeDB,
+		DB:          database,
+		ClientDB:    clientDB,
+		ExchangeDB:  exchangeDB,
+		EmailClient: emailClient,
 	})
 
 	log.Println("account-service gRPC server listening on :50054")

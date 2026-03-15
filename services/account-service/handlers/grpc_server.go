@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/account-service/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,9 +14,10 @@ import (
 
 type AccountServer struct {
 	pb.UnimplementedAccountServiceServer
-	DB         *sql.DB
-	ClientDB   *sql.DB
-	ExchangeDB *sql.DB
+	DB          *sql.DB
+	ClientDB    *sql.DB
+	ExchangeDB  *sql.DB
+	EmailClient pb_email.EmailServiceClient
 }
 
 // accountTypeCode maps account type string to 2-digit code used in account number generation.
@@ -35,10 +37,12 @@ func accountTypeCode(accountType string) string {
 }
 
 func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.CreateAccountResponse, error) {
-	// 1. Validate client exists
+	// 1. Validate client exists and fetch contact info for email
 	var clientID int64
+	var clientEmail, clientFirstName string
 	err := s.ClientDB.QueryRowContext(ctx,
-		`SELECT id FROM clients WHERE id = $1`, req.ClientId).Scan(&clientID)
+		`SELECT id, email, first_name FROM clients WHERE id = $1`, req.ClientId).
+		Scan(&clientID, &clientEmail, &clientFirstName)
 	if err == sql.ErrNoRows {
 		return nil, status.Errorf(codes.NotFound, "client with id %d not found", req.ClientId)
 	}
@@ -116,6 +120,21 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 	).Scan(&accountID, &createdDate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create account: %v", err)
+	}
+
+	// 7. Send account created email (non-blocking – log on failure)
+	if s.EmailClient != nil {
+		_, emailErr := s.EmailClient.SendAccountCreatedEmail(ctx, &pb_email.SendAccountCreatedEmailRequest{
+			Email:         clientEmail,
+			FirstName:     clientFirstName,
+			AccountName:   req.AccountName,
+			AccountNumber: accountNumber,
+			CurrencyCode:  currencyCode,
+		})
+		if emailErr != nil {
+			// log but don't fail the request
+			_ = emailErr
+		}
 	}
 
 	return &pb.CreateAccountResponse{
