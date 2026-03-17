@@ -49,6 +49,13 @@ until docker exec $(docker compose -f "$REPO_ROOT/services/account-service/docke
 done
 echo "account-db ready."
 
+echo "Waiting for client-db to be ready..."
+until docker exec $(docker compose -f "$REPO_ROOT/services/client-service/docker-compose.yml" ps -q client-db) \
+    pg_isready -U client_user -d client_db -q 2>/dev/null; do
+  sleep 1
+done
+echo "client-db ready."
+
 # Wait for RabbitMQ to be ready
 echo "Waiting for email-rabbitmq to be ready..."
 until bash -c 'echo > /dev/tcp/localhost/5672' 2>/dev/null; do
@@ -75,12 +82,16 @@ EMAIL_PID=$!
 go run "$REPO_ROOT/services/account-service/" &
 ACC_PID=$!
 
+go run "$REPO_ROOT/services/client-service/" &
+CLIENT_PID=$!
+
 echo ""
 echo "All services started."
 echo "  employee-service  PID $EMP_PID   (:50051)"
 echo "  auth-service      PID $AUTH_PID  (:50052)"
 echo "  email-service     PID $EMAIL_PID (:50053)"
-echo "  account-service   PID $ACC_PID   (:50054)"
+echo "  account-service   PID $ACC_PID    (:50054)"
+echo "  client-service    PID $CLIENT_PID (:50056)"
 echo "  api-gateway       PID $GW_PID    (:8081)"
 echo ""
 echo "Press Ctrl+C to stop all services."
@@ -94,6 +105,6 @@ echo "        cd services/client-service && docker compose down"
 echo "        cd services/exchange-service && docker compose down"
 
 # On Ctrl+C, kill Go services only — containers are intentionally left running
-trap "echo ''; echo 'Stopping Go services...'; kill $EMP_PID $AUTH_PID $GW_PID $EMAIL_PID $ACC_PID 2>/dev/null; exit 0" INT
+trap "echo ''; echo 'Stopping Go services...'; kill $EMP_PID $AUTH_PID $GW_PID $EMAIL_PID $ACC_PID $CLIENT_PID 2>/dev/null; exit 0" INT
 
 wait

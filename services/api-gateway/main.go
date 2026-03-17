@@ -23,6 +23,12 @@ import (
 // @in              header
 // @name            Authorization
 func main() {
+	clientClient, clientConn, err := gwgrpc.NewClientClient("localhost:50056")
+	if err != nil {
+		log.Fatalf("failed to connect to client-service: %v", err)
+	}
+	defer clientConn.Close()
+
 	employeeClient, empConn, err := gwgrpc.NewEmployeeClient("localhost:50051")
 	if err != nil {
 		log.Fatalf("failed to connect to employee-service: %v", err)
@@ -76,9 +82,16 @@ func main() {
 	r.POST("/api/accounts/create", middleware.RequireRole("EMPLOYEE"), handlers.CreateAccount(accountClient))
 	r.POST("/login", handlers.Login(authClient))
 	r.POST("/refresh", handlers.Refresh(authClient))
+	r.POST("/client/login", handlers.ClientLogin(authClient))
+	r.POST("/client/refresh", handlers.ClientRefresh(authClient))
 	r.POST("/auth/activate", handlers.Activate(authClient))
 	r.POST("/auth/forgot-password", handlers.ForgotPassword(authClient, emailClient))
 	r.POST("/auth/reset-password", handlers.ResetPassword(authClient))
+	r.GET("/clients", middleware.RequireRole("EMPLOYEE"), handlers.GetClients(clientClient))
+	r.GET("/clients/:id", middleware.RequireRole("EMPLOYEE"), handlers.GetClientById(clientClient))
+	r.POST("/clients", middleware.RequireRole("EMPLOYEE"), handlers.CreateClient(clientClient, authClient, emailClient))
+	r.PUT("/clients/:id", middleware.RequireRole("EMPLOYEE"), handlers.UpdateClient(clientClient))
+	r.POST("/client/activate", handlers.ActivateClient(authClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8081")
 }
