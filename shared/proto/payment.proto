@@ -55,8 +55,46 @@ message UpdatePaymentRecipientRequest {
 }
 message UpdatePaymentRecipientResponse { PaymentRecipient recipient = 1; }
 
+message Payment {
+  int64  id               = 1;
+  string order_number     = 2;
+  string from_account     = 3;
+  string to_account       = 4;
+  double initial_amount   = 5;
+  double final_amount     = 6;
+  double fee              = 7;
+  string payment_code     = 8;
+  string reference_number = 9;
+  string purpose          = 10;
+  string timestamp        = 11;
+  string status           = 12;
+  string recipient_name   = 13;
+}
+
+message GetPaymentByIdRequest {
+  int64 payment_id = 1;
+  int64 client_id  = 2;
+}
+
+message GetPaymentByIdResponse { Payment payment = 1; }
+
+message GetPaymentsRequest {
+  int64  client_id  = 1;
+  string date_from  = 2;
+  string date_to    = 3;
+  double amount_min = 4;
+  double amount_max = 5;
+  string status     = 6;
+}
+
+message GetPaymentsResponse {
+  repeated Payment payments = 1;
+}
+
 service PaymentService {
   rpc CreatePayment(CreatePaymentRequest)                     returns (CreatePaymentResponse);
+  rpc GetPayments(GetPaymentsRequest)                         returns (GetPaymentsResponse);
+  rpc GetPaymentById(GetPaymentByIdRequest)                   returns (GetPaymentByIdResponse);
   rpc CreatePaymentRecipient(CreatePaymentRecipientRequest)   returns (CreatePaymentRecipientResponse);
   rpc GetPaymentRecipients(GetPaymentRecipientsRequest)       returns (GetPaymentRecipientsResponse);
   rpc UpdatePaymentRecipient(UpdatePaymentRecipientRequest)   returns (UpdatePaymentRecipientResponse);

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/lib/pq"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -117,11 +118,14 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 	err = s.DB.QueryRowContext(ctx, `
 		INSERT INTO payments
 			(order_number, from_account, to_account, initial_amount, final_amount,
-			 fee, payment_code, reference_number, purpose, timestamp, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'COMPLETED')
+			 fee, recipient_id, payment_code, reference_number, purpose, timestamp, status)
+		VALUES ($1, $2, $3, $4, $5, $6,
+			(SELECT id FROM payment_recipients WHERE client_id = $7 AND account_number = $8 LIMIT 1),
+			$9, $10, $11, $12, 'COMPLETED')
 		RETURNING id`,
 		orderNumber, req.FromAccount, req.RecipientAccount,
 		req.Amount, finalAmount, fee,
+		req.ClientId, req.RecipientAccount,
 		req.PaymentCode, req.ReferenceNumber, req.Purpose, now,
 	).Scan(&paymentID)
 	if err != nil {
@@ -216,4 +220,109 @@ func (s *PaymentServer) DeletePaymentRecipient(ctx context.Context, req *pb.Dele
 		return nil, status.Error(codes.NotFound, "payment recipient not found")
 	}
 	return &pb.DeletePaymentRecipientResponse{}, nil
+}
+
+func (s *PaymentServer) GetPaymentById(ctx context.Context, req *pb.GetPaymentByIdRequest) (*pb.GetPaymentByIdResponse, error) {
+	var p pb.Payment
+	var ts time.Time
+	var recipientName sql.NullString
+
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT p.id, p.order_number, p.from_account, p.to_account,
+		       p.initial_amount, p.final_amount, p.fee,
+		       p.payment_code, p.reference_number, p.purpose,
+		       p.timestamp, p.status, r.name
+		FROM payments p
+		LEFT JOIN payment_recipients r ON p.recipient_id = r.id
+		WHERE p.id = $1`,
+		req.PaymentId,
+	).Scan(&p.Id, &p.OrderNumber, &p.FromAccount, &p.ToAccount,
+		&p.InitialAmount, &p.FinalAmount, &p.Fee,
+		&p.PaymentCode, &p.ReferenceNumber, &p.Purpose,
+		&ts, &p.Status, &recipientName,
+	)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "payment not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query payment: %v", err)
+	}
+
+	// Verify ownership: from_account must belong to this client
+	var ownerID int64
+	err = s.AccountDB.QueryRowContext(ctx,
+		`SELECT owner_id FROM accounts WHERE account_number = $1`, p.FromAccount,
+	).Scan(&ownerID)
+	if err != nil || ownerID != req.ClientId {
+		return nil, status.Error(codes.PermissionDenied, "payment does not belong to this client")
+	}
+
+	p.Timestamp = ts.Format(time.RFC3339)
+	if recipientName.Valid {
+		p.RecipientName = recipientName.String
+	}
+	return &pb.GetPaymentByIdResponse{Payment: &p}, nil
+}
+
+func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequest) (*pb.GetPaymentsResponse, error) {
+	// 1. Get all account numbers owned by this client
+	accRows, err := s.AccountDB.QueryContext(ctx,
+		`SELECT account_number FROM accounts WHERE owner_id = $1`, req.ClientId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query accounts: %v", err)
+	}
+	defer accRows.Close()
+
+	var accountNumbers []string
+	for accRows.Next() {
+		var an string
+		if err := accRows.Scan(&an); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan account: %v", err)
+		}
+		accountNumbers = append(accountNumbers, an)
+	}
+	if len(accountNumbers) == 0 {
+		return &pb.GetPaymentsResponse{Payments: []*pb.Payment{}}, nil
+	}
+
+	// 2. Query payments with optional filters
+	pmRows, err := s.DB.QueryContext(ctx, `
+		SELECT id, order_number, from_account, to_account,
+		       initial_amount, final_amount, fee,
+		       payment_code, reference_number, purpose,
+		       timestamp, status
+		FROM payments
+		WHERE from_account = ANY($1)
+		  AND ($2 = '' OR timestamp >= $2::timestamptz)
+		  AND ($3 = '' OR timestamp <= $3::timestamptz)
+		  AND ($4 = 0 OR initial_amount >= $4)
+		  AND ($5 = 0 OR initial_amount <= $5)
+		  AND ($6 = '' OR status = $6)
+		ORDER BY timestamp DESC`,
+		pq.Array(accountNumbers),
+		req.DateFrom, req.DateTo,
+		req.AmountMin, req.AmountMax,
+		req.Status,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query payments: %v", err)
+	}
+	defer pmRows.Close()
+
+	var payments []*pb.Payment
+	for pmRows.Next() {
+		var p pb.Payment
+		var ts time.Time
+		if err := pmRows.Scan(
+			&p.Id, &p.OrderNumber, &p.FromAccount, &p.ToAccount,
+			&p.InitialAmount, &p.FinalAmount, &p.Fee,
+			&p.PaymentCode, &p.ReferenceNumber, &p.Purpose,
+			&ts, &p.Status,
+		); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan payment: %v", err)
+		}
+		p.Timestamp = ts.Format(time.RFC3339)
+		payments = append(payments, &p)
+	}
+	return &pb.GetPaymentsResponse{Payments: payments}, nil
 }

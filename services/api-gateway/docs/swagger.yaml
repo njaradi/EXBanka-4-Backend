@@ -543,6 +543,105 @@ paths:
       summary: Get my accounts
       tags:
       - accounts
+  /api/payments:
+    get:
+      description: Returns all payments made from the authenticated client's accounts,
+        with optional filters.
+      parameters:
+      - description: From date (RFC3339)
+        in: query
+        name: date_from
+        type: string
+      - description: To date (RFC3339)
+        in: query
+        name: date_to
+        type: string
+      - description: Min amount
+        in: query
+        name: amount_min
+        type: number
+      - description: Max amount
+        in: query
+        name: amount_max
+        type: number
+      - description: Payment status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List client payments
+      tags:
+      - payments
+  /api/payments/{paymentId}:
+    get:
+      description: Returns details of a single payment owned by the authenticated
+        client.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: paymentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get payment details
+      tags:
+      - payments
   /api/payments/create:
     post:
       consumes:
