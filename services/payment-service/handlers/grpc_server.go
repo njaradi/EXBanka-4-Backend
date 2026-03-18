@@ -118,11 +118,14 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 	err = s.DB.QueryRowContext(ctx, `
 		INSERT INTO payments
 			(order_number, from_account, to_account, initial_amount, final_amount,
-			 fee, payment_code, reference_number, purpose, timestamp, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'COMPLETED')
+			 fee, recipient_id, payment_code, reference_number, purpose, timestamp, status)
+		VALUES ($1, $2, $3, $4, $5, $6,
+			(SELECT id FROM payment_recipients WHERE client_id = $7 AND account_number = $8 LIMIT 1),
+			$9, $10, $11, $12, 'COMPLETED')
 		RETURNING id`,
 		orderNumber, req.FromAccount, req.RecipientAccount,
 		req.Amount, finalAmount, fee,
+		req.ClientId, req.RecipientAccount,
 		req.PaymentCode, req.ReferenceNumber, req.Purpose, now,
 	).Scan(&paymentID)
 	if err != nil {
