@@ -232,7 +232,7 @@ func (s *PaymentServer) GetPaymentById(ctx context.Context, req *pb.GetPaymentBy
 	err := s.DB.QueryRowContext(ctx, `
 		SELECT p.id, p.order_number, p.from_account, p.to_account,
 		       p.initial_amount, p.final_amount, p.fee,
-		       p.payment_code, p.reference_number, p.purpose,
+		       COALESCE(p.payment_code, ''), COALESCE(p.reference_number, ''), COALESCE(p.purpose, ''),
 		       p.timestamp, p.status, r.name
 		FROM payments p
 		LEFT JOIN payment_recipients r ON p.recipient_id = r.id
@@ -311,7 +311,7 @@ func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequ
 	pmRows, err := s.DB.QueryContext(ctx, `
 		SELECT p.id, p.order_number, p.from_account, p.to_account,
 		       p.initial_amount, p.final_amount, p.fee,
-		       p.payment_code, p.reference_number, p.purpose,
+		       COALESCE(p.payment_code, ''), COALESCE(p.reference_number, ''), COALESCE(p.purpose, ''),
 		       p.timestamp, p.status, r.name
 		FROM payments p
 		LEFT JOIN payment_recipients r ON p.recipient_id = r.id
