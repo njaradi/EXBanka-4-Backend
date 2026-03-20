@@ -101,6 +101,7 @@ func main() {
 	r.POST("/clients", middleware.RequireRole("EMPLOYEE"), handlers.CreateClient(clientClient, authClient, emailClient))
 	r.PUT("/clients/:id", middleware.RequireRole("EMPLOYEE"), handlers.UpdateClient(clientClient))
 	r.POST("/client/activate", handlers.ActivateClient(authClient))
+	r.GET("/api/approvals/:id/poll", handlers.PollLoginApproval(authClient))
 	r.GET("/api/mobile/approvals", handlers.GetMyApprovals(authClient))
 	r.GET("/api/mobile/approvals/:id", handlers.GetMyApprovalById(authClient))
 	r.PUT("/api/twofactor/:id/approve", handlers.ApproveApproval(authClient))

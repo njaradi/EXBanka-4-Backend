@@ -36,6 +36,34 @@ func toApprovalResp(a *pb.Approval) approvalResp {
 	}
 }
 
+// PollLoginApproval is a public endpoint for polling a LOGIN approval status.
+// No authentication required — used by the web frontend while waiting for mobile approval.
+func PollLoginApproval(authClient pb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := authClient.PollApproval(ctx, &pb.PollApprovalRequest{Id: id})
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "approval not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":        resp.Status,
+			"access_token":  resp.AccessToken,
+			"refresh_token": resp.RefreshToken,
+		})
+	}
+}
+
 // GetMyApprovals returns all approvals for the authenticated client.
 func GetMyApprovals(authClient pb.AuthServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -376,10 +376,72 @@ func (s *AuthServer) ClientLogin(ctx context.Context, req *pb_auth.ClientLoginRe
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	return &pb_auth.ClientLoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
+	// Mobile login: return tokens directly (mobile is the approving device)
+	if req.Source == "mobile" {
+		return &pb_auth.ClientLoginResponse{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		}, nil
+	}
+
+	// Web login: create LOGIN approval with tokens in payload, return approvalRequestId
+	payload, _ := json.Marshal(map[string]string{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
+	var approvalID int64
+	var createdAt, expiresAt time.Time
+	err = s.DB.QueryRowContext(ctx,
+		`INSERT INTO two_factor_approvals (client_id, action_type, payload) VALUES ($1, 'LOGIN', $2) RETURNING id, created_at, expires_at`,
+		creds.Id, string(payload),
+	).Scan(&approvalID, &createdAt, &expiresAt)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create login approval: %v", err)
+	}
+
+	go s.sendApprovalPush(creds.Id, &pb_auth.Approval{
+		Id:         approvalID,
+		ClientId:   creds.Id,
+		ActionType: "LOGIN",
+		Payload:    string(payload),
+		Status:     "PENDING",
+		CreatedAt:  createdAt.Format(time.RFC3339),
+		ExpiresAt:  expiresAt.Format(time.RFC3339),
+	})
+
+	return &pb_auth.ClientLoginResponse{ApprovalRequestId: approvalID}, nil
+}
+
+func (s *AuthServer) PollApproval(ctx context.Context, req *pb_auth.PollApprovalRequest) (*pb_auth.PollApprovalResponse, error) {
+	var actionType, approvalStatus, payload string
+	var expiresAt time.Time
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT action_type, payload, status, expires_at FROM two_factor_approvals WHERE id = $1`,
+		req.Id,
+	).Scan(&actionType, &payload, &approvalStatus, &expiresAt)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "approval not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to poll approval: %v", err)
+	}
+
+	if approvalStatus == "PENDING" && time.Now().After(expiresAt) {
+		_, _ = s.DB.ExecContext(ctx, `UPDATE two_factor_approvals SET status = 'EXPIRED' WHERE id = $1`, req.Id)
+		approvalStatus = "EXPIRED"
+	}
+
+	resp := &pb_auth.PollApprovalResponse{Status: approvalStatus}
+
+	if approvalStatus == "APPROVED" && actionType == "LOGIN" {
+		var tokens map[string]string
+		if err := json.Unmarshal([]byte(payload), &tokens); err == nil {
+			resp.AccessToken = tokens["access_token"]
+			resp.RefreshToken = tokens["refresh_token"]
+		}
+	}
+
+	return resp, nil
 }
 
 func (s *AuthServer) ClientRefresh(_ context.Context, req *pb_auth.ClientRefreshRequest) (*pb_auth.ClientRefreshResponse, error) {

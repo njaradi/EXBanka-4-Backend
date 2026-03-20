@@ -49,11 +49,20 @@ message ResetPasswordResponse {}
 message ClientLoginRequest {
   string email    = 1;
   string password = 2;
+  string source   = 3;  // "mobile" = direct tokens; empty = web 2FA flow
 }
 
 message ClientLoginResponse {
-  string access_token  = 1;
-  string refresh_token = 2;
+  string access_token        = 1;  // set on mobile login
+  string refresh_token       = 2;  // set on mobile login
+  int64  approval_request_id = 3;  // set on web login (2FA flow)
+}
+
+message PollApprovalRequest  { int64 id = 1; }
+message PollApprovalResponse {
+  string status        = 1;  // PENDING | APPROVED | REJECTED | EXPIRED
+  string access_token  = 2;  // set when APPROVED (LOGIN type only)
+  string refresh_token = 3;  // set when APPROVED (LOGIN type only)
 }
 
 message ClientRefreshRequest  { string refresh_token = 1; }
@@ -127,6 +136,7 @@ service AuthService {
   rpc CreateClientActivationToken(CreateClientActivationTokenRequest)     returns (CreateClientActivationTokenResponse);
   rpc ActivateClient(ActivateClientRequest)                               returns (ActivateClientResponse);
 
+  rpc PollApproval(PollApprovalRequest)                     returns (PollApprovalResponse);
   rpc CreateApproval(CreateApprovalRequest)                 returns (CreateApprovalResponse);
   rpc GetApproval(GetApprovalRequest)                       returns (GetApprovalResponse);
   rpc GetClientApprovals(GetClientApprovalsRequest)         returns (GetClientApprovalsResponse);

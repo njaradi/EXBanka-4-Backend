@@ -237,6 +237,7 @@ func ClientLogin(client pb.AuthServiceClient) gin.HandlerFunc {
 		var req struct {
 			Email    string `json:"email"`
 			Password string `json:"password"`
+			Source   string `json:"source"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -247,9 +248,14 @@ func ClientLogin(client pb.AuthServiceClient) gin.HandlerFunc {
 		resp, err := client.ClientLogin(ctx, &pb.ClientLoginRequest{
 			Email:    req.Email,
 			Password: req.Password,
+			Source:   req.Source,
 		})
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			return
+		}
+		if resp.ApprovalRequestId != 0 {
+			c.JSON(http.StatusOK, gin.H{"approvalRequestId": resp.ApprovalRequestId})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{

@@ -681,7 +681,7 @@ func TestClientLogin_HappyPath(t *testing.T) {
 	)
 
 	s := &AuthServer{ClientClient: clientClient}
-	resp, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	resp, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12", Source: "mobile"})
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.AccessToken)
 	assert.NotEmpty(t, resp.RefreshToken)

@@ -29,6 +29,7 @@ const (
 	AuthService_ClientRefresh_FullMethodName               = "/auth.AuthService/ClientRefresh"
 	AuthService_CreateClientActivationToken_FullMethodName = "/auth.AuthService/CreateClientActivationToken"
 	AuthService_ActivateClient_FullMethodName              = "/auth.AuthService/ActivateClient"
+	AuthService_PollApproval_FullMethodName                = "/auth.AuthService/PollApproval"
 	AuthService_CreateApproval_FullMethodName              = "/auth.AuthService/CreateApproval"
 	AuthService_GetApproval_FullMethodName                 = "/auth.AuthService/GetApproval"
 	AuthService_GetClientApprovals_FullMethodName          = "/auth.AuthService/GetClientApprovals"
@@ -52,6 +53,7 @@ type AuthServiceClient interface {
 	ClientRefresh(ctx context.Context, in *ClientRefreshRequest, opts ...grpc.CallOption) (*ClientRefreshResponse, error)
 	CreateClientActivationToken(ctx context.Context, in *CreateClientActivationTokenRequest, opts ...grpc.CallOption) (*CreateClientActivationTokenResponse, error)
 	ActivateClient(ctx context.Context, in *ActivateClientRequest, opts ...grpc.CallOption) (*ActivateClientResponse, error)
+	PollApproval(ctx context.Context, in *PollApprovalRequest, opts ...grpc.CallOption) (*PollApprovalResponse, error)
 	CreateApproval(ctx context.Context, in *CreateApprovalRequest, opts ...grpc.CallOption) (*CreateApprovalResponse, error)
 	GetApproval(ctx context.Context, in *GetApprovalRequest, opts ...grpc.CallOption) (*GetApprovalResponse, error)
 	GetClientApprovals(ctx context.Context, in *GetClientApprovalsRequest, opts ...grpc.CallOption) (*GetClientApprovalsResponse, error)
@@ -169,6 +171,16 @@ func (c *authServiceClient) ActivateClient(ctx context.Context, in *ActivateClie
 	return out, nil
 }
 
+func (c *authServiceClient) PollApproval(ctx context.Context, in *PollApprovalRequest, opts ...grpc.CallOption) (*PollApprovalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PollApprovalResponse)
+	err := c.cc.Invoke(ctx, AuthService_PollApproval_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) CreateApproval(ctx context.Context, in *CreateApprovalRequest, opts ...grpc.CallOption) (*CreateApprovalResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateApprovalResponse)
@@ -253,6 +265,7 @@ type AuthServiceServer interface {
 	ClientRefresh(context.Context, *ClientRefreshRequest) (*ClientRefreshResponse, error)
 	CreateClientActivationToken(context.Context, *CreateClientActivationTokenRequest) (*CreateClientActivationTokenResponse, error)
 	ActivateClient(context.Context, *ActivateClientRequest) (*ActivateClientResponse, error)
+	PollApproval(context.Context, *PollApprovalRequest) (*PollApprovalResponse, error)
 	CreateApproval(context.Context, *CreateApprovalRequest) (*CreateApprovalResponse, error)
 	GetApproval(context.Context, *GetApprovalRequest) (*GetApprovalResponse, error)
 	GetClientApprovals(context.Context, *GetClientApprovalsRequest) (*GetClientApprovalsResponse, error)
@@ -299,6 +312,9 @@ func (UnimplementedAuthServiceServer) CreateClientActivationToken(context.Contex
 }
 func (UnimplementedAuthServiceServer) ActivateClient(context.Context, *ActivateClientRequest) (*ActivateClientResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ActivateClient not implemented")
+}
+func (UnimplementedAuthServiceServer) PollApproval(context.Context, *PollApprovalRequest) (*PollApprovalResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PollApproval not implemented")
 }
 func (UnimplementedAuthServiceServer) CreateApproval(context.Context, *CreateApprovalRequest) (*CreateApprovalResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateApproval not implemented")
@@ -522,6 +538,24 @@ func _AuthService_ActivateClient_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_PollApproval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PollApprovalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).PollApproval(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_PollApproval_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).PollApproval(ctx, req.(*PollApprovalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_CreateApproval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateApprovalRequest)
 	if err := dec(in); err != nil {
@@ -694,6 +728,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ActivateClient",
 			Handler:    _AuthService_ActivateClient_Handler,
+		},
+		{
+			MethodName: "PollApproval",
+			Handler:    _AuthService_PollApproval_Handler,
 		},
 		{
 			MethodName: "CreateApproval",
