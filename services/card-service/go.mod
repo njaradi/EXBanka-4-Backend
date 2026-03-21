@@ -5,6 +5,7 @@ go 1.26.1
 require (
 	github.com/RAF-SI-2025/EXBanka-4-Backend/shared v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.10.9
+	golang.org/x/crypto v0.48.0
 	google.golang.org/grpc v1.79.3
 )
 
