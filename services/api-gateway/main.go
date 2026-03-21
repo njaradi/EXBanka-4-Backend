@@ -59,6 +59,12 @@ func main() {
 	}
 	defer emailConn.Close()
 
+	loanClient, loanConn, err := gwgrpc.NewLoanClient("localhost:50058")
+	if err != nil {
+		log.Fatalf("failed to connect to loan-service: %v", err)
+	}
+	defer loanConn.Close()
+
 	exchangeClient, exchangeConn, err := gwgrpc.NewExchangeClient("localhost:50057")
 	if err != nil {
 		log.Fatalf("failed to connect to exchange-service: %v", err)
@@ -121,6 +127,10 @@ func main() {
 	r.POST("/exchange/convert", handlers.ConvertAmount(exchangeClient))
 	r.GET("/exchange/history", handlers.GetExchangeHistory(exchangeClient))
 	r.POST("/exchange/preview", handlers.PreviewConversion(exchangeClient))
+	r.GET("/loans", handlers.GetMyLoans(loanClient))
+	r.GET("/loans/:id", handlers.GetLoanDetails(loanClient))
+	r.GET("/loans/:id/installments", handlers.GetLoanInstallments(loanClient))
+	r.POST("/loans/apply", handlers.ApplyForLoan(loanClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8083")
 }

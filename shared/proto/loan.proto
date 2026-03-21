@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package loan;
+
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan";
+
+// --- Shared messages ---
+
+message LoanSummary {
+  int64  id               = 1;
+  int64  loan_number      = 2;
+  string account_number   = 3;
+  string loan_type        = 4;
+  double amount           = 5;
+  string currency         = 6;
+  string status           = 7;
+  int32  repayment_period = 8;
+}
+
+message LoanDetail {
+  int64  id                      = 1;
+  int64  loan_number             = 2;
+  string account_number          = 3;
+  string loan_type               = 4;
+  string interest_rate_type      = 5;
+  double amount                  = 6;
+  string currency                = 7;
+  int32  repayment_period        = 8;
+  double nominal_rate            = 9;
+  double effective_rate          = 10;
+  string agreed_date             = 11;
+  string maturity_date           = 12;
+  double next_installment_amount = 13;
+  string next_installment_date   = 14;
+  double remaining_debt          = 15;
+  string status                  = 16;
+}
+
+message Installment {
+  int64  id                 = 1;
+  int64  loan_id            = 2;
+  double installment_amount = 3;
+  double interest_rate      = 4;
+  string currency           = 5;
+  string expected_due_date  = 6;
+  string actual_due_date    = 7;
+  string status             = 8;
+}
+
+// --- GetClientLoans ---
+
+message GetClientLoansRequest {
+  int64 client_id = 1;
+}
+
+message GetClientLoansResponse {
+  repeated LoanSummary loans = 1;
+}
+
+// --- GetLoanDetails ---
+
+message GetLoanDetailsRequest {
+  int64 loan_id = 1;
+}
+
+message GetLoanDetailsResponse {
+  LoanDetail           loan         = 1;
+  repeated Installment installments = 2;
+}
+
+// --- GetLoanInstallments ---
+
+message GetLoanInstallmentsRequest {
+  int64 loan_id = 1;
+}
+
+message GetLoanInstallmentsResponse {
+  repeated Installment installments = 1;
+}
+
+// --- SubmitLoanApplication ---
+
+message SubmitLoanApplicationRequest {
+  int64  client_id          = 1;
+  string loan_type          = 2;
+  string interest_rate_type = 3;
+  double amount             = 4;
+  string currency           = 5;
+  string purpose            = 6;
+  double monthly_salary     = 7;
+  string employment_status  = 8;
+  int32  employment_period  = 9;
+  int32  repayment_period   = 10;
+  string contact_phone      = 11;
+  string account_number     = 12;
+}
+
+message SubmitLoanApplicationResponse {
+  int64  loan_id             = 1;
+  int64  loan_number         = 2;
+  double monthly_installment = 3;
+}
+
+// --- ApproveLoan / RejectLoan (employee) ---
+
+message ApproveLoanRequest {
+  int64 loan_id     = 1;
+  int64 employee_id = 2;
+}
+
+message ApproveLoanResponse {
+  bool success = 1;
+}
+
+message RejectLoanRequest {
+  int64 loan_id     = 1;
+  int64 employee_id = 2;
+}
+
+message RejectLoanResponse {
+  bool success = 1;
+}
+
+// --- GetAllLoanApplications / GetAllLoans (employee) ---
+
+message GetAllLoanApplicationsRequest {
+  string loan_type      = 1; // optional filter
+  string account_number = 2; // optional filter
+}
+
+message GetAllLoanApplicationsResponse {
+  repeated LoanDetail applications = 1;
+}
+
+message GetAllLoansRequest {
+  string loan_type      = 1; // optional filter
+  string account_number = 2; // optional filter
+  string status         = 3; // optional filter
+}
+
+message GetAllLoansResponse {
+  repeated LoanDetail loans = 1;
+}
+
+// --- Service ---
+
+service LoanService {
+  rpc GetClientLoans          (GetClientLoansRequest)          returns (GetClientLoansResponse);
+  rpc GetLoanDetails          (GetLoanDetailsRequest)          returns (GetLoanDetailsResponse);
+  rpc GetLoanInstallments     (GetLoanInstallmentsRequest)     returns (GetLoanInstallmentsResponse);
+  rpc SubmitLoanApplication   (SubmitLoanApplicationRequest)   returns (SubmitLoanApplicationResponse);
+  rpc ApproveLoan             (ApproveLoanRequest)             returns (ApproveLoanResponse);
+  rpc RejectLoan              (RejectLoanRequest)              returns (RejectLoanResponse);
+  rpc GetAllLoanApplications  (GetAllLoanApplicationsRequest)  returns (GetAllLoanApplicationsResponse);
+  rpc GetAllLoans             (GetAllLoansRequest)             returns (GetAllLoansResponse);
+}
