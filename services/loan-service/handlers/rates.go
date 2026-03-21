@@ -21,11 +21,11 @@ var rateTiers = []rateTier{
 
 // Bank margin by loan type (annual %)
 var bankMargin = map[string]float64{
-	"gotovinski":     1.75,
-	"stambeni":       1.50,
-	"auto":           1.25,
-	"refinansirajuci": 1.00,
-	"studentski":      0.75,
+	"CASH":        1.75,
+	"HOUSING":     1.50,
+	"AUTO":        1.25,
+	"REFINANCING": 1.00,
+	"STUDENT":     0.75,
 }
 
 // lookupRateTier returns the base annual rate (%) for a loan amount in RSD.
@@ -73,7 +73,7 @@ func monthlyInstallment(principal float64, annualRatePct float64, periods int) f
 func validRepaymentPeriods(loanType string) map[int]bool {
 	housing := map[int]bool{60: true, 120: true, 180: true, 240: true, 300: true, 360: true}
 	other := map[int]bool{12: true, 24: true, 36: true, 48: true, 60: true, 72: true, 84: true}
-	if loanType == "stambeni" {
+	if loanType == "HOUSING" {
 		return housing
 	}
 	return other

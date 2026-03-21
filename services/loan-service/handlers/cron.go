@@ -192,7 +192,7 @@ func (s *LoanServer) updateVariableRates() {
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, loan_type, amount, nominal_rate, effective_rate, remaining_debt, repayment_period, agreed_date
 		FROM loans
-		WHERE interest_rate_type = 'varijabilna' AND status = 'APPROVED'`)
+		WHERE interest_rate_type = 'VARIABLE' AND status = 'APPROVED'`)
 	if err != nil {
 		log.Printf("loan-service: monthly cron query error: %v", err)
 		return

@@ -132,12 +132,12 @@ func (s *LoanServer) queryInstallments(ctx context.Context, loanID int64) ([]*pb
 
 func (s *LoanServer) SubmitLoanApplication(ctx context.Context, req *pb.SubmitLoanApplicationRequest) (*pb.SubmitLoanApplicationResponse, error) {
 	// 1. Validate loan type
-	validTypes := map[string]bool{"gotovinski": true, "stambeni": true, "auto": true, "refinansirajuci": true, "studentski": true}
+	validTypes := map[string]bool{"CASH": true, "HOUSING": true, "AUTO": true, "REFINANCING": true, "STUDENT": true}
 	if !validTypes[req.LoanType] {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid loan type: %s", req.LoanType)
 	}
-	if req.InterestRateType != "fiksna" && req.InterestRateType != "varijabilna" {
-		return nil, status.Error(codes.InvalidArgument, "interest_rate_type must be 'fiksna' or 'varijabilna'")
+	if req.InterestRateType != "FIXED" && req.InterestRateType != "VARIABLE" {
+		return nil, status.Error(codes.InvalidArgument, "interest_rate_type must be 'FIXED' or 'VARIABLE'")
 	}
 	if req.Amount <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "amount must be positive")
@@ -179,7 +179,7 @@ func (s *LoanServer) SubmitLoanApplication(ctx context.Context, req *pb.SubmitLo
 	}
 
 	// 4. Calculate rates
-	fixed := req.InterestRateType == "fiksna"
+	fixed := req.InterestRateType == "FIXED"
 	nominalRate := lookupRateTier(amountRSD, fixed) // base rate
 	effectiveRate := effectiveAnnualRate(req.LoanType, amountRSD, fixed, 0)
 
