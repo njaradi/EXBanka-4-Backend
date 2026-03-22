@@ -132,6 +132,10 @@ func (m *mockEmailClient) SendAccountCreatedEmail(ctx context.Context, in *pb_em
 	return &pb_email.SendAccountCreatedEmailResponse{}, nil
 }
 
+func (m *mockEmailClient) SendCardConfirmationEmail(ctx context.Context, in *pb_email.SendCardConfirmationEmailRequest, opts ...grpc.CallOption) (*pb_email.SendCardConfirmationEmailResponse, error) {
+	return &pb_email.SendCardConfirmationEmailResponse{}, nil
+}
+
 type mockClientClient struct {
 	mock.Mock
 }

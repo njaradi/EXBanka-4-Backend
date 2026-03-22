@@ -31,6 +31,9 @@ func (m *mockEmailClient) SendPasswordConfirmationEmail(_ context.Context, _ *pb
 func (m *mockEmailClient) SendAccountCreatedEmail(_ context.Context, _ *pb_email.SendAccountCreatedEmailRequest, _ ...grpc.CallOption) (*pb_email.SendAccountCreatedEmailResponse, error) {
 	return &pb_email.SendAccountCreatedEmailResponse{}, m.err
 }
+func (m *mockEmailClient) SendCardConfirmationEmail(_ context.Context, _ *pb_email.SendCardConfirmationEmailRequest, _ ...grpc.CallOption) (*pb_email.SendCardConfirmationEmailResponse, error) {
+	return &pb_email.SendCardConfirmationEmailResponse{}, m.err
+}
 
 func newServer(t *testing.T) (*AccountServer, sqlmock.Sqlmock, sqlmock.Sqlmock, sqlmock.Sqlmock) {
 	t.Helper()
@@ -113,8 +116,8 @@ func TestGetAccount_NotFound(t *testing.T) {
 func TestGetAccount_WrongOwner(t *testing.T) {
 	s, dbMock, _, _ := newServer(t)
 	dbMock.ExpectQuery("SELECT").WillReturnRows(
-		sqlmock.NewRows([]string{"id", "account_name", "account_number", "owner_id", "balance", "available_balance", "reserved_funds", "currency_id", "status", "account_type", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent"}).
-			AddRow(int64(1), "Racun", "265000100000000101", int64(99), float64(500), float64(500), float64(0), int64(1), "ACTIVE", "CURRENT", float64(0), float64(0), float64(0), float64(0)),
+		sqlmock.NewRows([]string{"id", "account_name", "account_number", "owner_id", "balance", "available_balance", "reserved_funds", "currency_id", "status", "account_type", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent", "company_id"}).
+			AddRow(int64(1), "Racun", "265000100000000101", int64(99), float64(500), float64(500), float64(0), int64(1), "ACTIVE", "CURRENT", float64(0), float64(0), float64(0), float64(0), nil),
 	)
 
 	_, err := s.GetAccount(context.Background(), &pb.GetAccountRequest{AccountId: 1, OwnerId: 1})
@@ -125,8 +128,8 @@ func TestGetAccount_WrongOwner(t *testing.T) {
 func TestGetAccount_HappyPath(t *testing.T) {
 	s, dbMock, clientMock, exchangeMock := newServer(t)
 	dbMock.ExpectQuery("SELECT").WillReturnRows(
-		sqlmock.NewRows([]string{"id", "account_name", "account_number", "owner_id", "balance", "available_balance", "reserved_funds", "currency_id", "status", "account_type", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent"}).
-			AddRow(int64(1), "Racun", "265000100000000101", int64(5), float64(1000), float64(900), float64(100), int64(1), "ACTIVE", "CURRENT", float64(1000), float64(5000), float64(100), float64(200)),
+		sqlmock.NewRows([]string{"id", "account_name", "account_number", "owner_id", "balance", "available_balance", "reserved_funds", "currency_id", "status", "account_type", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent", "company_id"}).
+			AddRow(int64(1), "Racun", "265000100000000101", int64(5), float64(1000), float64(900), float64(100), int64(1), "ACTIVE", "CURRENT", float64(1000), float64(5000), float64(100), float64(200), nil),
 	)
 	exchangeMock.ExpectQuery("SELECT code").WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("RSD"))
 	clientMock.ExpectQuery("SELECT first_name").WillReturnRows(sqlmock.NewRows([]string{"first_name", "last_name"}).AddRow("Ana", "Anic"))

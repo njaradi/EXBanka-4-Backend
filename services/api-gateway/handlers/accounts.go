@@ -3,11 +3,13 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account"
+	pbcard "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/card"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,6 +23,7 @@ type CreateAccountRequest struct {
 	InitialBalance float64     `json:"initialBalance"`
 	AccountName    string      `json:"accountName"`
 	CreateCard     bool        `json:"createCard"`
+	CardName       string      `json:"cardName"`
 	CompanyData    *companyReq `json:"companyData"`
 }
 
@@ -373,7 +376,7 @@ func parseID(c *gin.Context, param string) (int64, error) {
 // @Failure      500   {object}  map[string]string
 // @Security     BearerAuth
 // @Router       /api/accounts/create [post]
-func CreateAccount(accountClient pb.AccountServiceClient) gin.HandlerFunc {
+func CreateAccount(accountClient pb.AccountServiceClient, cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req CreateAccountRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -423,6 +426,25 @@ func CreateAccount(accountClient pb.AccountServiceClient) gin.HandlerFunc {
 		}
 
 		a := resp.Account
+
+		if req.CreateCard {
+			cardName := req.CardName
+			if cardName == "" {
+				cardName = "VISA"
+			}
+			cardCtx, cardCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cardCancel()
+			_, cardErr := cardClient.CreateCard(cardCtx, &pbcard.CreateCardRequest{
+				AccountNumber:  a.AccountNumber,
+				CardName:       cardName,
+				CallerClientId: 0,
+				ForSelf:        true,
+			})
+			if cardErr != nil {
+				log.Printf("auto card creation failed for account %s: %v", a.AccountNumber, cardErr)
+			}
+		}
+
 		c.JSON(http.StatusCreated, gin.H{
 			"id":                a.Id,
 			"accountNumber":     a.AccountNumber,

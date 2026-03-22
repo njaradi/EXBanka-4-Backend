@@ -41,6 +41,11 @@ func (m *mockPublisher) PublishAccountCreated(msg queue.AccountCreatedMessage) e
 	return args.Error(0)
 }
 
+func (m *mockPublisher) PublishCardConfirmation(msg queue.CardConfirmationMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
 // ---- SendActivationEmail tests ----
 
 func TestSendActivationEmail_InvalidEmail(t *testing.T) {
