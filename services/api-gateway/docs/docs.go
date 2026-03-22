@@ -15,6 +15,144 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/loans": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Get all loans (employee)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by loan type",
+                        "name": "loanType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by account number",
+                        "name": "accountNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/loans/applications": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Get all pending loan applications (employee)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by loan type",
+                        "name": "loanType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by account number",
+                        "name": "accountNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/loans/{id}/approve": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Approve a pending loan application (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Loan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/loans/{id}/reject": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Reject a pending loan application (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Loan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/accounts": {
             "get": {
                 "security": [
@@ -87,7 +225,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CreateAccountRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.CreateAccountRequest"
                         }
                     }
                 ],
@@ -238,6 +376,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/accounts/{accountId}/limits": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the daily and monthly spending limits for an account. Requires employee authentication.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Update account limits",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "accountId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Limits",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "number"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/accounts/{accountId}/name": {
             "put": {
                 "security": [
@@ -303,6 +511,327 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/accounts/{accountId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns full account details for any account. Requires employee authentication.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Get account details (employee)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "accountId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Get all cards for the authenticated client",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/id/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Get details of a specific card by database ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Card ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/request": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Request a new card — sends email confirmation code to client",
+                "parameters": [
+                    {
+                        "description": "Card request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/request/confirm": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Confirm card request with email code — creates the card",
+                "parameters": [
+                    {
+                        "description": "Token and code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/{number}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Get details of a specific card",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/{number}/block": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Block a card (client — own card only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/{number}/deactivate": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Deactivate a card permanently (employee only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/{number}/limit": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Update card spending limit (employee only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New limit",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cards/{number}/unblock": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cards"
+                ],
+                "summary": "Unblock a card (employee only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -412,7 +941,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CreatePaymentRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.CreatePaymentRequest"
                         }
                     }
                 ],
@@ -595,7 +1124,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CreatePaymentRecipientRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.CreatePaymentRecipientRequest"
                         }
                     }
                 ],
@@ -669,7 +1198,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.UpdatePaymentRecipientRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.UpdatePaymentRecipientRequest"
                         }
                     }
                 ],
@@ -774,6 +1303,51 @@ const docTemplate = `{
             }
         },
         "/api/transfers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all internal transfers for the authenticated client's accounts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transfers"
+                ],
+                "summary": "List client transfers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -798,7 +1372,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CreateTransferRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.CreateTransferRequest"
                         }
                     }
                 ],
@@ -860,7 +1434,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ActivateRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.ActivateRequest"
                         }
                     }
                 ],
@@ -997,7 +1571,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ActivateRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.ActivateRequest"
                         }
                     }
                 ],
@@ -1070,7 +1644,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ActivateRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.ActivateRequest"
                         }
                     }
                 ],
@@ -1143,7 +1717,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.LoginRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.LoginRequest"
                         }
                     }
                 ],
@@ -1151,7 +1725,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.TokenResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.TokenResponse"
                         }
                     },
                     "400": {
@@ -1165,6 +1739,58 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/client/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the profile of the currently authenticated client.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "clients"
+                ],
+                "summary": "Get current client profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services_api-gateway_handlers.clientResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1195,7 +1821,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.RefreshRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.RefreshRequest"
                         }
                     }
                 ],
@@ -1203,7 +1829,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.AccessTokenResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.AccessTokenResponse"
                         }
                     },
                     "400": {
@@ -1308,7 +1934,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.createClientRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.createClientRequest"
                         }
                     }
                 ],
@@ -1316,7 +1942,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.clientResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.clientResponse"
                         }
                     },
                     "400": {
@@ -1386,7 +2012,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.clientResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.clientResponse"
                         }
                     },
                     "401": {
@@ -1449,7 +2075,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.updateClientRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.updateClientRequest"
                         }
                     }
                 ],
@@ -1457,7 +2083,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.clientResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.clientResponse"
                         }
                     },
                     "400": {
@@ -1541,7 +2167,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.EmployeeListResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.EmployeeListResponse"
                         }
                     },
                     "500": {
@@ -1579,7 +2205,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CreateEmployeeRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.CreateEmployeeRequest"
                         }
                     }
                 ],
@@ -1587,7 +2213,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.employeeResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.employeeResponse"
                         }
                     },
                     "400": {
@@ -1677,7 +2303,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.EmployeeListResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.EmployeeListResponse"
                         }
                     },
                     "500": {
@@ -1720,7 +2346,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.employeeResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.employeeResponse"
                         }
                     },
                     "400": {
@@ -1783,7 +2409,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.UpdateEmployeeRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.UpdateEmployeeRequest"
                         }
                     }
                 ],
@@ -1791,7 +2417,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.employeeResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.employeeResponse"
                         }
                     },
                     "400": {
@@ -1842,6 +2468,274 @@ const docTemplate = `{
                 }
             }
         },
+        "/exchange/convert": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchange"
+                ],
+                "summary": "Convert currency between two accounts",
+                "parameters": [
+                    {
+                        "description": "Conversion request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/exchange/history": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchange"
+                ],
+                "summary": "Get client's exchange transaction history",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/exchange/preview": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchange"
+                ],
+                "summary": "Preview currency conversion (no execution)",
+                "parameters": [
+                    {
+                        "description": "Preview request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/exchange/rate": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchange"
+                ],
+                "summary": "Get exchange rate between two currencies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "From currency (e.g. EUR)",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "To currency (e.g. USD)",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/exchange/rates": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchange"
+                ],
+                "summary": "Get today's exchange rates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/loans": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Get all loans for authenticated client",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/loans/apply": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Submit a loan application",
+                "parameters": [
+                    {
+                        "description": "Loan application",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/loans/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Get details + installments for a loan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Loan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/loans/{id}/installments": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "loans"
+                ],
+                "summary": "Get installments for a loan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Loan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "description": "Authenticate with email and password, receive JWT tokens.",
@@ -1862,7 +2756,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.LoginRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.LoginRequest"
                         }
                     }
                 ],
@@ -1870,7 +2764,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.TokenResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.TokenResponse"
                         }
                     },
                     "400": {
@@ -1914,7 +2808,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.RefreshRequest"
+                            "$ref": "#/definitions/services_api-gateway_handlers.RefreshRequest"
                         }
                     }
                 ],
@@ -1922,7 +2816,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.AccessTokenResponse"
+                            "$ref": "#/definitions/services_api-gateway_handlers.AccessTokenResponse"
                         }
                     },
                     "400": {
@@ -1948,7 +2842,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.AccessTokenResponse": {
+        "services_api-gateway_handlers.AccessTokenResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -1956,7 +2850,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.ActivateRequest": {
+        "services_api-gateway_handlers.ActivateRequest": {
             "type": "object",
             "required": [
                 "confirm_password",
@@ -1975,7 +2869,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.CreateAccountRequest": {
+        "services_api-gateway_handlers.CreateAccountRequest": {
             "type": "object",
             "required": [
                 "accountType",
@@ -1989,11 +2883,14 @@ const docTemplate = `{
                 "accountType": {
                     "type": "string"
                 },
+                "cardName": {
+                    "type": "string"
+                },
                 "clientId": {
                     "type": "integer"
                 },
                 "companyData": {
-                    "$ref": "#/definitions/handlers.companyReq"
+                    "$ref": "#/definitions/services_api-gateway_handlers.companyReq"
                 },
                 "createCard": {
                     "type": "boolean"
@@ -2006,7 +2903,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.CreateEmployeeRequest": {
+        "services_api-gateway_handlers.CreateEmployeeRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -2068,7 +2965,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.CreatePaymentRecipientRequest": {
+        "services_api-gateway_handlers.CreatePaymentRecipientRequest": {
             "type": "object",
             "required": [
                 "accountNumber",
@@ -2083,7 +2980,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.CreatePaymentRequest": {
+        "services_api-gateway_handlers.CreatePaymentRequest": {
             "type": "object",
             "required": [
                 "amount",
@@ -2115,7 +3012,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.CreateTransferRequest": {
+        "services_api-gateway_handlers.CreateTransferRequest": {
             "type": "object",
             "required": [
                 "amount",
@@ -2134,13 +3031,13 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.EmployeeListResponse": {
+        "services_api-gateway_handlers.EmployeeListResponse": {
             "type": "object",
             "properties": {
                 "employees": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.employeeResponse"
+                        "$ref": "#/definitions/services_api-gateway_handlers.employeeResponse"
                     }
                 },
                 "total_count": {
@@ -2148,7 +3045,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.LoginRequest": {
+        "services_api-gateway_handlers.LoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2161,7 +3058,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.RefreshRequest": {
+        "services_api-gateway_handlers.RefreshRequest": {
             "type": "object",
             "properties": {
                 "refresh_token": {
@@ -2169,7 +3066,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.TokenResponse": {
+        "services_api-gateway_handlers.TokenResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -2180,7 +3077,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.UpdateEmployeeRequest": {
+        "services_api-gateway_handlers.UpdateEmployeeRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -2254,7 +3151,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.UpdatePaymentRecipientRequest": {
+        "services_api-gateway_handlers.UpdatePaymentRecipientRequest": {
             "type": "object",
             "required": [
                 "accountNumber",
@@ -2269,7 +3166,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.clientResponse": {
+        "services_api-gateway_handlers.clientResponse": {
             "type": "object",
             "properties": {
                 "active": {
@@ -2307,7 +3204,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.companyReq": {
+        "services_api-gateway_handlers.companyReq": {
             "type": "object",
             "properties": {
                 "activityCode": {
@@ -2327,7 +3224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.createClientRequest": {
+        "services_api-gateway_handlers.createClientRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -2370,7 +3267,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.employeeResponse": {
+        "services_api-gateway_handlers.employeeResponse": {
             "type": "object",
             "properties": {
                 "adresa": {
@@ -2420,7 +3317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.updateClientRequest": {
+        "services_api-gateway_handlers.updateClientRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -2474,7 +3371,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8081",
+	Host:             "localhost:8083",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "EXBanka API Gateway",

@@ -1,11 +1,11 @@
 basePath: /
 definitions:
-  handlers.AccessTokenResponse:
+  services_api-gateway_handlers.AccessTokenResponse:
     properties:
       access_token:
         type: string
     type: object
-  handlers.ActivateRequest:
+  services_api-gateway_handlers.ActivateRequest:
     properties:
       confirm_password:
         type: string
@@ -18,16 +18,18 @@ definitions:
     - password
     - token
     type: object
-  handlers.CreateAccountRequest:
+  services_api-gateway_handlers.CreateAccountRequest:
     properties:
       accountName:
         type: string
       accountType:
         type: string
+      cardName:
+        type: string
       clientId:
         type: integer
       companyData:
-        $ref: '#/definitions/handlers.companyReq'
+        $ref: '#/definitions/services_api-gateway_handlers.companyReq'
       createCard:
         type: boolean
       currencyCode:
@@ -39,7 +41,7 @@ definitions:
     - clientId
     - currencyCode
     type: object
-  handlers.CreateEmployeeRequest:
+  services_api-gateway_handlers.CreateEmployeeRequest:
     properties:
       address:
         example: Bulevar Kralja Aleksandra 73
@@ -87,7 +89,7 @@ definitions:
     - position
     - username
     type: object
-  handlers.CreatePaymentRecipientRequest:
+  services_api-gateway_handlers.CreatePaymentRecipientRequest:
     properties:
       accountNumber:
         type: string
@@ -97,7 +99,7 @@ definitions:
     - accountNumber
     - name
     type: object
-  handlers.CreatePaymentRequest:
+  services_api-gateway_handlers.CreatePaymentRequest:
     properties:
       amount:
         type: number
@@ -119,7 +121,7 @@ definitions:
     - recipientAccount
     - recipientName
     type: object
-  handlers.CreateTransferRequest:
+  services_api-gateway_handlers.CreateTransferRequest:
     properties:
       amount:
         type: number
@@ -132,16 +134,16 @@ definitions:
     - fromAccount
     - toAccount
     type: object
-  handlers.EmployeeListResponse:
+  services_api-gateway_handlers.EmployeeListResponse:
     properties:
       employees:
         items:
-          $ref: '#/definitions/handlers.employeeResponse'
+          $ref: '#/definitions/services_api-gateway_handlers.employeeResponse'
         type: array
       total_count:
         type: integer
     type: object
-  handlers.LoginRequest:
+  services_api-gateway_handlers.LoginRequest:
     properties:
       email:
         example: jdoe@ankabanka.com
@@ -150,19 +152,19 @@ definitions:
         example: secret
         type: string
     type: object
-  handlers.RefreshRequest:
+  services_api-gateway_handlers.RefreshRequest:
     properties:
       refresh_token:
         type: string
     type: object
-  handlers.TokenResponse:
+  services_api-gateway_handlers.TokenResponse:
     properties:
       access_token:
         type: string
       refresh_token:
         type: string
     type: object
-  handlers.UpdateEmployeeRequest:
+  services_api-gateway_handlers.UpdateEmployeeRequest:
     properties:
       active:
         example: true
@@ -218,7 +220,7 @@ definitions:
     - position
     - username
     type: object
-  handlers.UpdatePaymentRecipientRequest:
+  services_api-gateway_handlers.UpdatePaymentRecipientRequest:
     properties:
       accountNumber:
         type: string
@@ -228,7 +230,7 @@ definitions:
     - accountNumber
     - name
     type: object
-  handlers.clientResponse:
+  services_api-gateway_handlers.clientResponse:
     properties:
       active:
         type: boolean
@@ -253,7 +255,7 @@ definitions:
       username:
         type: string
     type: object
-  handlers.companyReq:
+  services_api-gateway_handlers.companyReq:
     properties:
       activityCode:
         type: string
@@ -266,7 +268,7 @@ definitions:
       registrationNumber:
         type: string
     type: object
-  handlers.createClientRequest:
+  services_api-gateway_handlers.createClientRequest:
     properties:
       address:
         type: string
@@ -297,7 +299,7 @@ definitions:
     - phone_number
     - username
     type: object
-  handlers.employeeResponse:
+  services_api-gateway_handlers.employeeResponse:
     properties:
       adresa:
         type: string
@@ -330,7 +332,7 @@ definitions:
       username:
         type: string
     type: object
-  handlers.updateClientRequest:
+  services_api-gateway_handlers.updateClientRequest:
     properties:
       active:
         type: boolean
@@ -358,13 +360,103 @@ definitions:
     - last_name
     - username
     type: object
-host: localhost:8081
+host: localhost:8083
 info:
   contact: {}
   description: REST API gateway for EXBanka microservices.
   title: EXBanka API Gateway
   version: "1.0"
 paths:
+  /admin/loans:
+    get:
+      parameters:
+      - description: Filter by loan type
+        in: query
+        name: loanType
+        type: string
+      - description: Filter by account number
+        in: query
+        name: accountNumber
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get all loans (employee)
+      tags:
+      - loans
+  /admin/loans/{id}/approve:
+    put:
+      parameters:
+      - description: Loan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Approve a pending loan application (employee)
+      tags:
+      - loans
+  /admin/loans/{id}/reject:
+    put:
+      parameters:
+      - description: Loan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reject a pending loan application (employee)
+      tags:
+      - loans
+  /admin/loans/applications:
+    get:
+      parameters:
+      - description: Filter by loan type
+        in: query
+        name: loanType
+        type: string
+      - description: Filter by account number
+        in: query
+        name: accountNumber
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get all pending loan applications (employee)
+      tags:
+      - loans
   /api/accounts:
     get:
       description: Returns all bank accounts. Requires employee authentication.
@@ -430,6 +522,52 @@ paths:
       summary: Get account details
       tags:
       - accounts
+  /api/accounts/{accountId}/limits:
+    put:
+      consumes:
+      - application/json
+      description: Sets the daily and monthly spending limits for an account. Requires
+        employee authentication.
+      parameters:
+      - description: Account ID
+        in: path
+        name: accountId
+        required: true
+        type: integer
+      - description: Limits
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: number
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update account limits
+      tags:
+      - accounts
   /api/accounts/{accountId}/name:
     put:
       consumes:
@@ -487,7 +625,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.CreateAccountRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.CreateAccountRequest'
       produces:
       - application/json
       responses:
@@ -556,6 +694,216 @@ paths:
       summary: Get my accounts
       tags:
       - accounts
+  /api/admin/accounts/{accountId}:
+    get:
+      description: Returns full account details for any account. Requires employee
+        authentication.
+      parameters:
+      - description: Account ID
+        in: path
+        name: accountId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get account details (employee)
+      tags:
+      - accounts
+  /api/cards:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get all cards for the authenticated client
+      tags:
+      - cards
+  /api/cards/{number}:
+    get:
+      parameters:
+      - description: Card number
+        in: path
+        name: number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get details of a specific card
+      tags:
+      - cards
+  /api/cards/{number}/block:
+    put:
+      parameters:
+      - description: Card number
+        in: path
+        name: number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Block a card (client — own card only)
+      tags:
+      - cards
+  /api/cards/{number}/deactivate:
+    put:
+      parameters:
+      - description: Card number
+        in: path
+        name: number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Deactivate a card permanently (employee only)
+      tags:
+      - cards
+  /api/cards/{number}/limit:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Card number
+        in: path
+        name: number
+        required: true
+        type: string
+      - description: New limit
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update card spending limit (employee only)
+      tags:
+      - cards
+  /api/cards/{number}/unblock:
+    put:
+      parameters:
+      - description: Card number
+        in: path
+        name: number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Unblock a card (employee only)
+      tags:
+      - cards
+  /api/cards/id/{id}:
+    get:
+      parameters:
+      - description: Card ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get details of a specific card by database ID
+      tags:
+      - cards
+  /api/cards/request:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Card request
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Request a new card — sends email confirmation code to client
+      tags:
+      - cards
+  /api/cards/request/confirm:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Token and code
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Confirm card request with email code — creates the card
+      tags:
+      - cards
   /api/payments:
     get:
       description: Returns all payments made from the authenticated client's accounts,
@@ -666,7 +1014,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.CreatePaymentRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.CreatePaymentRequest'
       produces:
       - application/json
       responses:
@@ -738,7 +1086,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.CreatePaymentRecipientRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.CreatePaymentRecipientRequest'
       produces:
       - application/json
       responses:
@@ -820,7 +1168,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.UpdatePaymentRecipientRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.UpdatePaymentRecipientRequest'
       produces:
       - application/json
       responses:
@@ -859,6 +1207,35 @@ paths:
       tags:
       - recipients
   /api/transfers:
+    get:
+      description: Returns all internal transfers for the authenticated client's accounts.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List client transfers
+      tags:
+      - transfers
     post:
       consumes:
       - application/json
@@ -870,7 +1247,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.CreateTransferRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.CreateTransferRequest'
       produces:
       - application/json
       responses:
@@ -914,7 +1291,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.ActivateRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.ActivateRequest'
       produces:
       - application/json
       responses:
@@ -1004,7 +1381,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.ActivateRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.ActivateRequest'
       produces:
       - application/json
       responses:
@@ -1053,7 +1430,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.ActivateRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.ActivateRequest'
       produces:
       - application/json
       responses:
@@ -1101,14 +1478,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.LoginRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.TokenResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.TokenResponse'
         "400":
           description: Bad Request
           schema:
@@ -1124,6 +1501,39 @@ paths:
       summary: Client login
       tags:
       - auth
+  /client/me:
+    get:
+      description: Returns the profile of the currently authenticated client.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_handlers.clientResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current client profile
+      tags:
+      - clients
   /client/refresh:
     post:
       consumes:
@@ -1135,14 +1545,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.RefreshRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.AccessTokenResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.AccessTokenResponse'
         "400":
           description: Bad Request
           schema:
@@ -1206,14 +1616,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.createClientRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.createClientRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.clientResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.clientResponse'
         "400":
           description: Bad Request
           schema:
@@ -1258,7 +1668,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.clientResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.clientResponse'
         "401":
           description: Unauthorized
           schema:
@@ -1297,14 +1707,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.updateClientRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.updateClientRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.clientResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.clientResponse'
         "400":
           description: Bad Request
           schema:
@@ -1358,7 +1768,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.EmployeeListResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.EmployeeListResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1380,14 +1790,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.CreateEmployeeRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.CreateEmployeeRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.employeeResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.employeeResponse'
         "400":
           description: Bad Request
           schema:
@@ -1426,7 +1836,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.employeeResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.employeeResponse'
         "400":
           description: Bad Request
           schema:
@@ -1465,14 +1875,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.UpdateEmployeeRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.UpdateEmployeeRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.employeeResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.employeeResponse'
         "400":
           description: Bad Request
           schema:
@@ -1543,7 +1953,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.EmployeeListResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.EmployeeListResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1555,6 +1965,181 @@ paths:
       summary: Search employees
       tags:
       - employees
+  /exchange/convert:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Conversion request
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Convert currency between two accounts
+      tags:
+      - exchange
+  /exchange/history:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get client's exchange transaction history
+      tags:
+      - exchange
+  /exchange/preview:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Preview request
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Preview currency conversion (no execution)
+      tags:
+      - exchange
+  /exchange/rate:
+    get:
+      parameters:
+      - description: From currency (e.g. EUR)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: To currency (e.g. USD)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get exchange rate between two currencies
+      tags:
+      - exchange
+  /exchange/rates:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get today's exchange rates
+      tags:
+      - exchange
+  /loans:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get all loans for authenticated client
+      tags:
+      - loans
+  /loans/{id}:
+    get:
+      parameters:
+      - description: Loan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get details + installments for a loan
+      tags:
+      - loans
+  /loans/{id}/installments:
+    get:
+      parameters:
+      - description: Loan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get installments for a loan
+      tags:
+      - loans
+  /loans/apply:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Loan application
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Submit a loan application
+      tags:
+      - loans
   /login:
     post:
       consumes:
@@ -1566,14 +2151,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.LoginRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.TokenResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.TokenResponse'
         "400":
           description: Bad Request
           schema:
@@ -1600,14 +2185,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handlers.RefreshRequest'
+          $ref: '#/definitions/services_api-gateway_handlers.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.AccessTokenResponse'
+            $ref: '#/definitions/services_api-gateway_handlers.AccessTokenResponse'
         "400":
           description: Bad Request
           schema:

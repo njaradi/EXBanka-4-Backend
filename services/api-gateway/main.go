@@ -17,7 +17,7 @@ import (
 // @title           EXBanka API Gateway
 // @version         1.0
 // @description     REST API gateway for EXBanka microservices.
-// @host            localhost:8081
+// @host            localhost:8083
 // @BasePath        /
 // @securityDefinitions.apikey BearerAuth
 // @in              header
@@ -143,15 +143,16 @@ func main() {
 	r.PUT("/admin/loans/:id/approve", middleware.RequireRole("ADMIN"), handlers.ApproveLoan(loanClient))
 	r.PUT("/admin/loans/:id/reject", middleware.RequireRole("ADMIN"), handlers.RejectLoan(loanClient))
 	r.GET("/admin/loans", middleware.RequireRole("ADMIN"), handlers.GetAllLoans(loanClient))
-	r.GET("/cards", handlers.GetMyCards(accountClient, cardClient))
-	r.POST("/cards/request", handlers.InitiateCardRequest(cardClient, clientClient, emailClient))
-	r.POST("/cards/request/confirm", handlers.ConfirmCardRequest(cardClient))
-	r.GET("/cards/id/:id", handlers.GetCardById(cardClient))
-	r.GET("/cards/:number", handlers.GetCardByNumber(cardClient))
-	r.PUT("/cards/:number/block", handlers.BlockCard(cardClient))
-	r.PUT("/cards/:number/unblock", middleware.RequireRole("EMPLOYEE"), handlers.UnblockCard(cardClient))
-	r.PUT("/cards/:number/deactivate", middleware.RequireRole("EMPLOYEE"), handlers.DeactivateCard(cardClient))
-	r.PUT("/cards/:number/limit", middleware.RequireRole("EMPLOYEE"), handlers.UpdateCardLimit(cardClient))
+	r.GET("/api/cards", handlers.GetMyCards(accountClient, cardClient))
+	r.GET("/api/cards/by-account/:accountNumber", middleware.RequireRole("EMPLOYEE"), handlers.GetCardsByAccount(cardClient))
+	r.POST("/api/cards/request", handlers.InitiateCardRequest(cardClient, clientClient, emailClient))
+	r.POST("/api/cards/request/confirm", handlers.ConfirmCardRequest(cardClient))
+	r.GET("/api/cards/id/:id", handlers.GetCardById(cardClient))
+	r.GET("/api/cards/:number", handlers.GetCardByNumber(cardClient))
+	r.PUT("/api/cards/:id/block", handlers.BlockCard(cardClient))
+	r.PUT("/api/cards/:id/unblock", middleware.RequireRole("EMPLOYEE"), handlers.UnblockCard(cardClient))
+	r.PUT("/api/cards/:id/deactivate", middleware.RequireRole("EMPLOYEE"), handlers.DeactivateCard(cardClient))
+	r.PUT("/api/cards/:id/limit", middleware.RequireRole("EMPLOYEE"), handlers.UpdateCardLimit(cardClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8083")
 }
