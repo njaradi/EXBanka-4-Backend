@@ -30,12 +30,39 @@ func cardToJSON(c *pbcard.CardResponse) gin.H {
 	}
 }
 
+// GetCardsByAccount godoc
+// @Summary  Get all cards for a given account (employee only)
+// @Tags     cards
+// @Produce  json
+// @Param    accountNumber  path  string  true  "Account number"
+// @Success  200  {array}  map[string]interface{}
+// @Router   /api/cards/by-account/{accountNumber} [get]
+func GetCardsByAccount(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := cardClient.GetCardsByAccount(ctx, &pbcard.GetCardsByAccountRequest{
+			AccountNumber: c.Param("accountNumber"),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch cards"})
+			return
+		}
+		cards := make([]gin.H, 0, len(resp.Cards))
+		for _, card := range resp.Cards {
+			cards = append(cards, cardToJSON(card))
+		}
+		c.JSON(http.StatusOK, cards)
+	}
+}
+
 // GetMyCards godoc
 // @Summary  Get all cards for the authenticated client
 // @Tags     cards
 // @Produce  json
 // @Success  200  {array}  map[string]interface{}
-// @Router   /cards [get]
+// @Router   /api/cards [get]
 func GetMyCards(accountClient pbaccount.AccountServiceClient, cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientID, err := middleware.GetUserIDFromToken(c)
@@ -75,7 +102,7 @@ func GetMyCards(accountClient pbaccount.AccountServiceClient, cardClient pbcard.
 // @Produce  json
 // @Param    id  path  int  true  "Card ID"
 // @Success  200  {object}  map[string]interface{}
-// @Router   /cards/id/{id} [get]
+// @Router   /api/cards/id/{id} [get]
 func GetCardById(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if _, err := middleware.GetUserIDFromToken(c); err != nil {
@@ -110,7 +137,7 @@ func GetCardById(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 // @Produce  json
 // @Param    number  path  string  true  "Card number"
 // @Success  200  {object}  map[string]interface{}
-// @Router   /cards/{number} [get]
+// @Router   /api/cards/{number} [get]
 func GetCardByNumber(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if _, err := middleware.GetUserIDFromToken(c); err != nil {
@@ -134,13 +161,26 @@ func GetCardByNumber(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	}
 }
 
+// resolveCardNumber fetches the full card number for a given card ID.
+func resolveCardNumber(ctx context.Context, cardClient pbcard.CardServiceClient, rawID string) (string, error) {
+	var id int64
+	if _, err := fmt.Sscanf(rawID, "%d", &id); err != nil {
+		return "", err
+	}
+	resp, err := cardClient.GetCardById(ctx, &pbcard.GetCardByIdRequest{Id: id})
+	if err != nil {
+		return "", err
+	}
+	return resp.Card.CardNumber, nil
+}
+
 // BlockCard godoc
 // @Summary  Block a card (client — own card only)
 // @Tags     cards
 // @Produce  json
-// @Param    number  path  string  true  "Card number"
+// @Param    id  path  int  true  "Card ID"
 // @Success  200  {object}  map[string]interface{}
-// @Router   /cards/{number}/block [put]
+// @Router   /api/cards/{id}/block [put]
 func BlockCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientID, err := middleware.GetUserIDFromToken(c)
@@ -151,8 +191,18 @@ func BlockCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
+		cardNumber, err := resolveCardNumber(ctx, cardClient, c.Param("id"))
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+			}
+			return
+		}
+
 		_, err = cardClient.BlockCard(ctx, &pbcard.BlockCardRequest{
-			CardNumber:     c.Param("number"),
+			CardNumber:     cardNumber,
 			CallerClientId: clientID,
 			CallerRole:     "CLIENT",
 		})
@@ -177,15 +227,25 @@ func BlockCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 // @Summary  Unblock a card (employee only)
 // @Tags     cards
 // @Produce  json
-// @Param    number  path  string  true  "Card number"
+// @Param    id  path  int  true  "Card ID"
 // @Success  200  {object}  map[string]interface{}
-// @Router   /cards/{number}/unblock [put]
+// @Router   /api/cards/{id}/unblock [put]
 func UnblockCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		_, err := cardClient.UnblockCard(ctx, &pbcard.UnblockCardRequest{CardNumber: c.Param("number")})
+		cardNumber, err := resolveCardNumber(ctx, cardClient, c.Param("id"))
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+			}
+			return
+		}
+
+		_, err = cardClient.UnblockCard(ctx, &pbcard.UnblockCardRequest{CardNumber: cardNumber})
 		if err != nil {
 			switch status.Code(err) {
 			case codes.NotFound:
@@ -205,15 +265,25 @@ func UnblockCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 // @Summary  Deactivate a card permanently (employee only)
 // @Tags     cards
 // @Produce  json
-// @Param    number  path  string  true  "Card number"
+// @Param    id  path  int  true  "Card ID"
 // @Success  200  {object}  map[string]interface{}
-// @Router   /cards/{number}/deactivate [put]
+// @Router   /api/cards/{id}/deactivate [put]
 func DeactivateCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		_, err := cardClient.DeactivateCard(ctx, &pbcard.DeactivateCardRequest{CardNumber: c.Param("number")})
+		cardNumber, err := resolveCardNumber(ctx, cardClient, c.Param("id"))
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+			}
+			return
+		}
+
+		_, err = cardClient.DeactivateCard(ctx, &pbcard.DeactivateCardRequest{CardNumber: cardNumber})
 		if err != nil {
 			switch status.Code(err) {
 			case codes.NotFound:
@@ -234,10 +304,10 @@ func DeactivateCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 // @Tags     cards
 // @Accept   json
 // @Produce  json
-// @Param    number  path  string  true  "Card number"
-// @Param    body    body  object  true  "New limit"
+// @Param    id    path  int     true  "Card ID"
+// @Param    body  body  object  true  "New limit"
 // @Success  200  {object}  map[string]interface{}
-// @Router   /cards/{number}/limit [put]
+// @Router   /api/cards/{id}/limit [put]
 func UpdateCardLimit(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
@@ -250,8 +320,18 @@ func UpdateCardLimit(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		_, err := cardClient.UpdateCardLimit(ctx, &pbcard.UpdateCardLimitRequest{
-			CardNumber: c.Param("number"),
+		cardNumber, err := resolveCardNumber(ctx, cardClient, c.Param("id"))
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+			}
+			return
+		}
+
+		_, err = cardClient.UpdateCardLimit(ctx, &pbcard.UpdateCardLimitRequest{
+			CardNumber: cardNumber,
 			NewLimit:   req.NewLimit,
 		})
 		if err != nil {
@@ -276,7 +356,7 @@ func UpdateCardLimit(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 // @Produce  json
 // @Param    body  body  object  true  "Card request"
 // @Success  200   {object}  map[string]interface{}
-// @Router   /cards/request [post]
+// @Router   /api/cards/request [post]
 func InitiateCardRequest(cardClient pbcard.CardServiceClient, clientClient pbclient.ClientServiceClient, emailClient pbemail.EmailServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientID, err := middleware.GetUserIDFromToken(c)
@@ -370,7 +450,7 @@ func InitiateCardRequest(cardClient pbcard.CardServiceClient, clientClient pbcli
 // @Produce  json
 // @Param    body  body  object  true  "Token and code"
 // @Success  201   {object}  map[string]interface{}
-// @Router   /cards/request/confirm [post]
+// @Router   /api/cards/request/confirm [post]
 func ConfirmCardRequest(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if _, err := middleware.GetUserIDFromToken(c); err != nil {
