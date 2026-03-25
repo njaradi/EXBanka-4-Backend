@@ -471,16 +471,18 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 			return nil, status.Errorf(codes.Internal, "failed to resolve destination currency: %v", err)
 		}
 
-		// getSelling returns today's selling rate for a currency vs RSD.
-		// Falls back to the static exchange_rates table if daily rates are not yet populated.
+		// getRate returns the appropriate rate for a currency vs RSD based on direction:
+		// buying_rate when the bank buys the currency (foreign → RSD),
+		// selling_rate when the bank sells the currency (RSD → foreign).
 		today := time.Now().Format("2006-01-02")
-		getSelling := func(code string) (float64, error) {
+		getRate := func(code, rateType string) (float64, error) {
 			if code == "RSD" {
 				return 1.0, nil
 			}
 			var r float64
+			col := rateType // "buying_rate" or "selling_rate"
 			e := s.ExchangeDB.QueryRowContext(ctx,
-				`SELECT selling_rate FROM daily_exchange_rates WHERE currency_code = $1 AND date = $2`,
+				`SELECT `+col+` FROM daily_exchange_rates WHERE currency_code = $1 AND date = $2`,
 				code, today,
 			).Scan(&r)
 			if e == sql.ErrNoRows {
@@ -492,27 +494,35 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 			return r, e
 		}
 
-		fromSelling, ferr := getSelling(fromCode)
-		if ferr != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get selling rate for %s: %v", fromCode, ferr)
-		}
-		toSelling, terr := getSelling(toCode)
-		if terr != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get selling rate for %s: %v", toCode, terr)
-		}
-
-		// Same conversion formula as exchange-service (issue #75 rules)
+		// Foreign → RSD: bank buys foreign at buying_rate
+		// RSD → Foreign: bank sells foreign at selling_rate
 		switch {
 		case fromCode == "RSD":
+			toSelling, err := getRate(toCode, "selling_rate")
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get rate for %s: %v", toCode, err)
+			}
 			finalAmount = (req.Amount / toSelling) * (1 - transferCommission)
 			exchangeRate = toSelling
 		case toCode == "RSD":
-			finalAmount = req.Amount * fromSelling * (1 - transferCommission)
-			exchangeRate = fromSelling
+			fromBuying, err := getRate(fromCode, "buying_rate")
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get rate for %s: %v", fromCode, err)
+			}
+			finalAmount = req.Amount * fromBuying * (1 - transferCommission)
+			exchangeRate = fromBuying
 		default:
-			rsdAmount := req.Amount * fromSelling * (1 - transferCommission)
+			fromBuying, err := getRate(fromCode, "buying_rate")
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get rate for %s: %v", fromCode, err)
+			}
+			toSelling, err := getRate(toCode, "selling_rate")
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get rate for %s: %v", toCode, err)
+			}
+			rsdAmount := req.Amount * fromBuying * (1 - transferCommission)
 			finalAmount = (rsdAmount / toSelling) * (1 - transferCommission)
-			exchangeRate = fromSelling / toSelling
+			exchangeRate = fromBuying / toSelling
 		}
 		finalAmount = math.Round(finalAmount*100) / 100
 		fee = math.Round(req.Amount*transferCommission*100) / 100
