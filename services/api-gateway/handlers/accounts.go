@@ -301,6 +301,7 @@ func GetAllAccounts(accountClient pb.AccountServiceClient) gin.HandlerFunc {
 				"ownerFirstName":   a.OwnerFirstName,
 				"ownerLastName":    a.OwnerLastName,
 				"accountType":      a.AccountType,
+				"accountSubtype":   a.AccountSubtype,
 				"currencyCode":     a.CurrencyCode,
 				"availableBalance": a.AvailableBalance,
 			})

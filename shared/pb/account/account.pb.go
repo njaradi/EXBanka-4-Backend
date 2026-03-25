@@ -1052,6 +1052,7 @@ type AccountListItem struct {
 	AccountType      string                 `protobuf:"bytes,7,opt,name=account_type,json=accountType,proto3" json:"account_type,omitempty"`
 	CurrencyCode     string                 `protobuf:"bytes,8,opt,name=currency_code,json=currencyCode,proto3" json:"currency_code,omitempty"`
 	AvailableBalance float64                `protobuf:"fixed64,9,opt,name=available_balance,json=availableBalance,proto3" json:"available_balance,omitempty"`
+	AccountSubtype   string                 `protobuf:"bytes,10,opt,name=account_subtype,json=accountSubtype,proto3" json:"account_subtype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1147,6 +1148,13 @@ func (x *AccountListItem) GetAvailableBalance() float64 {
 		return x.AvailableBalance
 	}
 	return 0
+}
+
+func (x *AccountListItem) GetAccountSubtype() string {
+	if x != nil {
+		return x.AccountSubtype
+	}
+	return ""
 }
 
 type GetAllAccountsResponse struct {
@@ -1283,7 +1291,7 @@ const file_account_proto_rawDesc = "" +
 	"dailyLimit\x12#\n" +
 	"\rmonthly_limit\x18\x04 \x01(\x01R\fmonthlyLimit\"\x1d\n" +
 	"\x1bUpdateAccountLimitsResponse\"\x17\n" +
-	"\x15GetAllAccountsRequest\"\xcd\x02\n" +
+	"\x15GetAllAccountsRequest\"\xf6\x02\n" +
 	"\x0fAccountListItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12%\n" +
 	"\x0eaccount_number\x18\x02 \x01(\tR\raccountNumber\x12!\n" +
@@ -1293,7 +1301,9 @@ const file_account_proto_rawDesc = "" +
 	"\x0fowner_last_name\x18\x06 \x01(\tR\rownerLastName\x12!\n" +
 	"\faccount_type\x18\a \x01(\tR\vaccountType\x12#\n" +
 	"\rcurrency_code\x18\b \x01(\tR\fcurrencyCode\x12+\n" +
-	"\x11available_balance\x18\t \x01(\x01R\x10availableBalance\"N\n" +
+	"\x11available_balance\x18\t \x01(\x01R\x10availableBalance\x12'\n" +
+	"\x0faccount_subtype\x18\n" +
+	" \x01(\tR\x0eaccountSubtype\"N\n" +
 	"\x16GetAllAccountsResponse\x124\n" +
 	"\baccounts\x18\x01 \x03(\v2\x18.account.AccountListItemR\baccounts2\xfc\x03\n" +
 	"\x0eAccountService\x12N\n" +

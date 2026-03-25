@@ -167,7 +167,8 @@ func (s *AccountServer) RenameAccount(ctx context.Context, req *pb.RenameAccount
 
 func (s *AccountServer) GetAllAccounts(ctx context.Context, _ *pb.GetAllAccountsRequest) (*pb.GetAllAccountsResponse, error) {
 	rows, err := s.DB.QueryContext(ctx,
-		`SELECT id, account_number, account_name, owner_id, account_type, currency_id, available_balance
+		`SELECT id, account_number, account_name, owner_id, account_type, currency_id, available_balance,
+		        COALESCE(account_subtype, '')
 		 FROM accounts
 		 WHERE account_type != 'BANK'
 		 ORDER BY id DESC`)
@@ -184,11 +185,12 @@ func (s *AccountServer) GetAllAccounts(ctx context.Context, _ *pb.GetAllAccounts
 		accountType      string
 		currencyID       int64
 		availableBalance float64
+		accountSubtype   string
 	}
 	var accs []row
 	for rows.Next() {
 		var r row
-		if err := rows.Scan(&r.id, &r.accountNumber, &r.accountName, &r.ownerID, &r.accountType, &r.currencyID, &r.availableBalance); err != nil {
+		if err := rows.Scan(&r.id, &r.accountNumber, &r.accountName, &r.ownerID, &r.accountType, &r.currencyID, &r.availableBalance, &r.accountSubtype); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to scan account: %v", err)
 		}
 		accs = append(accs, r)
@@ -233,24 +235,21 @@ func (s *AccountServer) GetAllAccounts(ctx context.Context, _ *pb.GetAllAccounts
 			AccountType:      a.accountType,
 			CurrencyCode:     currencyMap[a.currencyID],
 			AvailableBalance: a.availableBalance,
+			AccountSubtype:   a.accountSubtype,
 		})
 	}
 	return &pb.GetAllAccountsResponse{Accounts: items}, nil
 }
 
-// accountTypeCode maps account type string to 2-digit code used in account number generation.
+// accountTypeCode maps account category to 2-digit code used in account number generation.
 func accountTypeCode(accountType string) string {
 	switch accountType {
-	case "CURRENT":
+	case "personal":
 		return "01"
-	case "SAVINGS":
-		return "02"
-	case "FOREIGN_CURRENCY":
-		return "03"
-	case "BUSINESS":
+	case "business":
 		return "04"
 	default:
-		return "00"
+		return "01"
 	}
 }
 
@@ -286,9 +285,9 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 	// 4. Set expiration date 5 years from now
 	expirationDate := time.Now().AddDate(5, 0, 0).Format("2006-01-02")
 
-	// 5. Resolve company for BUSINESS accounts
+	// 5. Resolve company for business accounts
 	var companyID *int64
-	if req.AccountType == "BUSINESS" && req.CompanyData != nil && req.CompanyData.Name != "" {
+	if req.AccountType == "business" && req.CompanyData != nil && req.CompanyData.Name != "" {
 		var cid int64
 		err = s.DB.QueryRowContext(ctx,
 			`SELECT id FROM companies WHERE registration_number = $1`,

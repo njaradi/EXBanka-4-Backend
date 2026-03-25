@@ -115,6 +115,7 @@ message AccountListItem {
   string account_type      = 7;
   string currency_code     = 8;
   double available_balance = 9;
+  string account_subtype   = 10;
 }
 
 message GetAllAccountsResponse {
