@@ -3,10 +3,14 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"math"
 	"math/rand/v2"
 	"time"
+
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 )
 
 const maxRetries = 5
@@ -35,7 +39,7 @@ func (s *LoanServer) collectInstallments() {
 
 	// Find all loans due today (APPROVED) OR IN_DELAY with no retry in last 72h
 	rows, err := s.DB.QueryContext(ctx, `
-		SELECT id, account_number, next_installment_amount, currency, remaining_debt
+		SELECT id, loan_number, client_id, account_number, next_installment_amount, currency, remaining_debt
 		FROM loans
 		WHERE (
 		    (status = 'APPROVED' AND next_installment_date = CURRENT_DATE)
@@ -62,6 +66,8 @@ func (s *LoanServer) collectInstallments() {
 
 	var loans []struct {
 		id            int64
+		loanNumber    int64
+		clientID      int64
 		accountNumber string
 		amount        float64
 		currency      string
@@ -70,12 +76,14 @@ func (s *LoanServer) collectInstallments() {
 	for rows.Next() {
 		var l struct {
 			id            int64
+			loanNumber    int64
+			clientID      int64
 			accountNumber string
 			amount        float64
 			currency      string
 			remainingDebt float64
 		}
-		if err := rows.Scan(&l.id, &l.accountNumber, &l.amount, &l.currency, &l.remainingDebt); err != nil {
+		if err := rows.Scan(&l.id, &l.loanNumber, &l.clientID, &l.accountNumber, &l.amount, &l.currency, &l.remainingDebt); err != nil {
 			log.Printf("loan-service: daily cron scan error: %v", err)
 			continue
 		}
@@ -83,11 +91,11 @@ func (s *LoanServer) collectInstallments() {
 	}
 
 	for _, l := range loans {
-		s.processInstallment(ctx, l.id, l.accountNumber, l.amount, l.currency, l.remainingDebt)
+		s.processInstallment(ctx, l.id, l.loanNumber, l.clientID, l.accountNumber, l.amount, l.currency, l.remainingDebt)
 	}
 }
 
-func (s *LoanServer) processInstallment(ctx context.Context, loanID int64, accountNumber string, amount float64, currency string, remainingDebt float64) {
+func (s *LoanServer) processInstallment(ctx context.Context, loanID int64, loanNumber int64, clientID int64, accountNumber string, amount float64, currency string, remainingDebt float64) {
 	// Find the UNPAID or LATE installment due today or earliest overdue
 	var installmentID int64
 	var retryCount int
@@ -169,7 +177,21 @@ func (s *LoanServer) processInstallment(ctx context.Context, loanID int64, accou
 			log.Printf("loan-service: set IN_DELAY error: %v", err)
 		}
 		log.Printf("loan-service: insufficient funds for loan %d (retry %d)", loanID, newRetry)
-		// TODO: send email notification via email-service
+		if s.EmailClient != nil && s.ClientClient != nil {
+			if clientResp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: clientID}); err == nil {
+				c := clientResp.Client
+				_, _ = s.EmailClient.SendLoanLatePaymentEmail(ctx, &pb_email.SendLoanLatePaymentEmailRequest{
+					Email:      c.Email,
+					FirstName:  c.FirstName,
+					LoanNumber: fmt.Sprintf("%d", loanNumber),
+					AmountDue:  amount,
+					Currency:   currency,
+					RetryCount: int32(newRetry),
+				})
+			} else {
+				log.Printf("loan-service: could not fetch client %d for late payment email: %v", clientID, err)
+			}
+		}
 	}
 }
 

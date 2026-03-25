@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loan Payment Failed</title>
+</head>
+<body style="font-family: sans-serif; background: #f8f9fa; padding: 40px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <h2 style="color: #dc2626; margin-bottom: 8px;">AnkaBanka</h2>
+    <p>Dear {{.FirstName}},</p>
+    <p>We were unable to collect the installment for your loan <strong>#{{.LoanNumber}}</strong>.</p>
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 20px; margin: 24px 0;">
+      <p style="margin: 0; font-size: 16px;"><strong>Amount due:</strong> {{.AmountDue}} {{.Currency}}</p>
+      <p style="margin: 8px 0 0; color: #6b7280; font-size: 14px;">Failed attempts: {{.RetryCount}}</p>
+    </div>
+    <p>Please ensure your account has sufficient funds. We will automatically retry the payment.</p>
+    <p style="color: #dc2626; font-size: 14px;"><strong>Note:</strong> Repeated failed payments may result in a higher interest rate and potential legal action.</p>
+    <p style="color: #6b7280; font-size: 14px;">Best regards,<br><strong>AnkaBanka Team</strong></p>
+  </div>
+</body>
+</html>

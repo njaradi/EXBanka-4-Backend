@@ -90,6 +90,12 @@ func main() {
 	}
 	defer cardConfirmConsumeCh.Close()
 
+	loanLateConsumeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open loan late payment consume channel: %v", err)
+	}
+	defer loanLateConsumeCh.Close()
+
 	producer, err := queue.NewProducer(publishCh)
 	if err != nil {
 		log.Fatalf("failed to create producer: %v", err)
@@ -120,11 +126,17 @@ func main() {
 		log.Fatalf("failed to parse card confirmation email template: %v", err)
 	}
 
+	loanLateTmpl, err := template.ParseFiles("templates/loan_late_payment.html")
+	if err != nil {
+		log.Fatalf("failed to parse loan late payment email template: %v", err)
+	}
+
 	go queue.Consume(consumeCh, smtpCfg, tmpl)
 	go queue.ConsumePasswordReset(resetConsumeCh, smtpCfg, resetTmpl)
 	go queue.ConsumePasswordConfirmation(confirmConsumeCh, smtpCfg, confirmTmpl)
 	go queue.ConsumeAccountCreated(accountCreatedConsumeCh, smtpCfg, accountCreatedTmpl)
 	go queue.ConsumeCardConfirmation(cardConfirmConsumeCh, smtpCfg, cardConfirmTmpl)
+	go queue.ConsumeLoanLatePayment(loanLateConsumeCh, smtpCfg, loanLateTmpl)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

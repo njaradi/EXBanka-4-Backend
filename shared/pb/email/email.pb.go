@@ -421,6 +421,126 @@ func (*SendCardConfirmationEmailResponse) Descriptor() ([]byte, []int) {
 	return file_email_proto_rawDescGZIP(), []int{7}
 }
 
+type SendLoanLatePaymentEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LoanNumber    string                 `protobuf:"bytes,3,opt,name=loan_number,json=loanNumber,proto3" json:"loan_number,omitempty"`
+	AmountDue     float64                `protobuf:"fixed64,4,opt,name=amount_due,json=amountDue,proto3" json:"amount_due,omitempty"`
+	Currency      string                 `protobuf:"bytes,5,opt,name=currency,proto3" json:"currency,omitempty"`
+	RetryCount    int32                  `protobuf:"varint,6,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendLoanLatePaymentEmailRequest) Reset() {
+	*x = SendLoanLatePaymentEmailRequest{}
+	mi := &file_email_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendLoanLatePaymentEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendLoanLatePaymentEmailRequest) ProtoMessage() {}
+
+func (x *SendLoanLatePaymentEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendLoanLatePaymentEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendLoanLatePaymentEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SendLoanLatePaymentEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendLoanLatePaymentEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendLoanLatePaymentEmailRequest) GetLoanNumber() string {
+	if x != nil {
+		return x.LoanNumber
+	}
+	return ""
+}
+
+func (x *SendLoanLatePaymentEmailRequest) GetAmountDue() float64 {
+	if x != nil {
+		return x.AmountDue
+	}
+	return 0
+}
+
+func (x *SendLoanLatePaymentEmailRequest) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *SendLoanLatePaymentEmailRequest) GetRetryCount() int32 {
+	if x != nil {
+		return x.RetryCount
+	}
+	return 0
+}
+
+type SendLoanLatePaymentEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendLoanLatePaymentEmailResponse) Reset() {
+	*x = SendLoanLatePaymentEmailResponse{}
+	mi := &file_email_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendLoanLatePaymentEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendLoanLatePaymentEmailResponse) ProtoMessage() {}
+
+func (x *SendLoanLatePaymentEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendLoanLatePaymentEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendLoanLatePaymentEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{9}
+}
+
 var File_email_proto protoreflect.FileDescriptor
 
 const file_email_proto_rawDesc = "" +
@@ -452,13 +572,26 @@ const file_email_proto_rawDesc = "" +
 	"\n" +
 	"first_name\x18\x02 \x01(\tR\tfirstName\x12+\n" +
 	"\x11confirmation_code\x18\x03 \x01(\tR\x10confirmationCode\"#\n" +
-	"!SendCardConfirmationEmailResponse2\x95\x04\n" +
+	"!SendCardConfirmationEmailResponse\"\xd3\x01\n" +
+	"\x1fSendLoanLatePaymentEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1f\n" +
+	"\vloan_number\x18\x03 \x01(\tR\n" +
+	"loanNumber\x12\x1d\n" +
+	"\n" +
+	"amount_due\x18\x04 \x01(\x01R\tamountDue\x12\x1a\n" +
+	"\bcurrency\x18\x05 \x01(\tR\bcurrency\x12\x1f\n" +
+	"\vretry_count\x18\x06 \x01(\x05R\n" +
+	"retryCount\"\"\n" +
+	" SendLoanLatePaymentEmailResponse2\x82\x05\n" +
 	"\fEmailService\x12\\\n" +
 	"\x13SendActivationEmail\x12!.email.SendActivationEmailRequest\x1a\".email.SendActivationEmailResponse\x12e\n" +
 	"\x16SendPasswordResetEmail\x12$.email.SendPasswordResetEmailRequest\x1a%.email.SendPasswordResetEmailResponse\x12f\n" +
 	"\x1dSendPasswordConfirmationEmail\x12!.email.SendActivationEmailRequest\x1a\".email.SendActivationEmailResponse\x12h\n" +
 	"\x17SendAccountCreatedEmail\x12%.email.SendAccountCreatedEmailRequest\x1a&.email.SendAccountCreatedEmailResponse\x12n\n" +
-	"\x19SendCardConfirmationEmail\x12'.email.SendCardConfirmationEmailRequest\x1a(.email.SendCardConfirmationEmailResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/emailb\x06proto3"
+	"\x19SendCardConfirmationEmail\x12'.email.SendCardConfirmationEmailRequest\x1a(.email.SendCardConfirmationEmailResponse\x12k\n" +
+	"\x18SendLoanLatePaymentEmail\x12&.email.SendLoanLatePaymentEmailRequest\x1a'.email.SendLoanLatePaymentEmailResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/emailb\x06proto3"
 
 var (
 	file_email_proto_rawDescOnce sync.Once
@@ -472,7 +605,7 @@ func file_email_proto_rawDescGZIP() []byte {
 	return file_email_proto_rawDescData
 }
 
-var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_email_proto_goTypes = []any{
 	(*SendActivationEmailRequest)(nil),        // 0: email.SendActivationEmailRequest
 	(*SendActivationEmailResponse)(nil),       // 1: email.SendActivationEmailResponse
@@ -482,6 +615,8 @@ var file_email_proto_goTypes = []any{
 	(*SendAccountCreatedEmailResponse)(nil),   // 5: email.SendAccountCreatedEmailResponse
 	(*SendCardConfirmationEmailRequest)(nil),  // 6: email.SendCardConfirmationEmailRequest
 	(*SendCardConfirmationEmailResponse)(nil), // 7: email.SendCardConfirmationEmailResponse
+	(*SendLoanLatePaymentEmailRequest)(nil),   // 8: email.SendLoanLatePaymentEmailRequest
+	(*SendLoanLatePaymentEmailResponse)(nil),  // 9: email.SendLoanLatePaymentEmailResponse
 }
 var file_email_proto_depIdxs = []int32{
 	0, // 0: email.EmailService.SendActivationEmail:input_type -> email.SendActivationEmailRequest
@@ -489,13 +624,15 @@ var file_email_proto_depIdxs = []int32{
 	0, // 2: email.EmailService.SendPasswordConfirmationEmail:input_type -> email.SendActivationEmailRequest
 	4, // 3: email.EmailService.SendAccountCreatedEmail:input_type -> email.SendAccountCreatedEmailRequest
 	6, // 4: email.EmailService.SendCardConfirmationEmail:input_type -> email.SendCardConfirmationEmailRequest
-	1, // 5: email.EmailService.SendActivationEmail:output_type -> email.SendActivationEmailResponse
-	3, // 6: email.EmailService.SendPasswordResetEmail:output_type -> email.SendPasswordResetEmailResponse
-	1, // 7: email.EmailService.SendPasswordConfirmationEmail:output_type -> email.SendActivationEmailResponse
-	5, // 8: email.EmailService.SendAccountCreatedEmail:output_type -> email.SendAccountCreatedEmailResponse
-	7, // 9: email.EmailService.SendCardConfirmationEmail:output_type -> email.SendCardConfirmationEmailResponse
-	5, // [5:10] is the sub-list for method output_type
-	0, // [0:5] is the sub-list for method input_type
+	8, // 5: email.EmailService.SendLoanLatePaymentEmail:input_type -> email.SendLoanLatePaymentEmailRequest
+	1, // 6: email.EmailService.SendActivationEmail:output_type -> email.SendActivationEmailResponse
+	3, // 7: email.EmailService.SendPasswordResetEmail:output_type -> email.SendPasswordResetEmailResponse
+	1, // 8: email.EmailService.SendPasswordConfirmationEmail:output_type -> email.SendActivationEmailResponse
+	5, // 9: email.EmailService.SendAccountCreatedEmail:output_type -> email.SendAccountCreatedEmailResponse
+	7, // 10: email.EmailService.SendCardConfirmationEmail:output_type -> email.SendCardConfirmationEmailResponse
+	9, // 11: email.EmailService.SendLoanLatePaymentEmail:output_type -> email.SendLoanLatePaymentEmailResponse
+	6, // [6:12] is the sub-list for method output_type
+	0, // [0:6] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -512,7 +649,7 @@ func file_email_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_email_proto_rawDesc), len(file_email_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

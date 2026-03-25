@@ -36,6 +36,16 @@ message SendCardConfirmationEmailRequest {
 }
 message SendCardConfirmationEmailResponse {}
 
+message SendLoanLatePaymentEmailRequest {
+  string email       = 1;
+  string first_name  = 2;
+  string loan_number = 3;
+  double amount_due  = 4;
+  string currency    = 5;
+  int32  retry_count = 6;
+}
+message SendLoanLatePaymentEmailResponse {}
+
 service EmailService {
   rpc SendActivationEmail(SendActivationEmailRequest)                 returns (SendActivationEmailResponse);
   rpc SendPasswordResetEmail(SendPasswordResetEmailRequest)           returns (SendPasswordResetEmailResponse);
@@ -43,4 +53,5 @@ service EmailService {
   rpc SendPasswordConfirmationEmail(SendActivationEmailRequest)       returns (SendActivationEmailResponse);
   rpc SendAccountCreatedEmail(SendAccountCreatedEmailRequest)         returns (SendAccountCreatedEmailResponse);
   rpc SendCardConfirmationEmail(SendCardConfirmationEmailRequest)     returns (SendCardConfirmationEmailResponse);
+  rpc SendLoanLatePaymentEmail(SendLoanLatePaymentEmailRequest)       returns (SendLoanLatePaymentEmailResponse);
 }

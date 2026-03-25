@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"time"
 
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,9 +18,11 @@ import (
 
 type LoanServer struct {
 	pb.UnimplementedLoanServiceServer
-	DB         *sql.DB // loan_db
-	AccountDB  *sql.DB // account_db
-	ExchangeDB *sql.DB // exchange_db (for currency conversion to determine rate tier)
+	DB           *sql.DB // loan_db
+	AccountDB    *sql.DB // account_db
+	ExchangeDB   *sql.DB // exchange_db (for currency conversion to determine rate tier)
+	EmailClient  pb_email.EmailServiceClient
+	ClientClient pb_client.ClientServiceClient
 }
 
 // --- GetClientLoans ---

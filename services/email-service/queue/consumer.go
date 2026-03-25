@@ -3,6 +3,7 @@ package queue
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 
@@ -236,6 +237,58 @@ func ConsumePasswordConfirmation(ch *amqp.Channel, cfg SMTPConfig, tmpl *templat
 
 		d.Ack(false)
 	}
+}
+
+func ConsumeLoanLatePayment(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(LoanLatePaymentQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare loan late payment queue: %v", err)
+	}
+
+	msgs, err := ch.Consume(LoanLatePaymentQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start loan late payment consumer: %v", err)
+	}
+
+	log.Println("loan late payment email consumer started, waiting for messages")
+
+	for d := range msgs {
+		var msg LoanLatePaymentMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode loan late payment message: %v", err)
+			d.Ack(false)
+			continue
+		}
+
+		if err := sendLoanLatePaymentEmail(cfg, tmpl, msg); err != nil {
+			log.Printf("failed to send loan late payment email to %s: %v", msg.Email, err)
+		} else {
+			log.Printf("loan late payment email sent to %s", msg.Email)
+		}
+
+		d.Ack(false)
+	}
+}
+
+func sendLoanLatePaymentEmail(cfg SMTPConfig, tmpl *template.Template, msg LoanLatePaymentMessage) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, map[string]string{
+		"FirstName":  msg.FirstName,
+		"LoanNumber": msg.LoanNumber,
+		"AmountDue":  fmt.Sprintf("%.2f", msg.AmountDue),
+		"Currency":   msg.Currency,
+		"RetryCount": fmt.Sprintf("%d", msg.RetryCount),
+	}); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", msg.Email)
+	m.SetHeader("Subject", "Loan Payment Failed — AnkaBanka")
+	m.SetBody("text/html", buf.String())
+
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
 }
 
 func sendPasswordConfirmationEmail(cfg SMTPConfig, tmpl *template.Template, msg PasswordConfirmationMessage) error {

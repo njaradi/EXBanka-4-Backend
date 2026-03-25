@@ -6,8 +6,11 @@ import (
 
 	loandb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/loan-service/db"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/loan-service/handlers"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -36,6 +39,20 @@ func main() {
 	}
 	defer exchangeDB.Close()
 
+	emailConn, err := grpc.NewClient("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to email-service: %v", err)
+	}
+	defer emailConn.Close()
+	emailClient := pb_email.NewEmailServiceClient(emailConn)
+
+	clientConn, err := grpc.NewClient("localhost:50056", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to client-service: %v", err)
+	}
+	defer clientConn.Close()
+	clientClient := pb_client.NewClientServiceClient(clientConn)
+
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", grpcPort, err)
@@ -43,9 +60,11 @@ func main() {
 
 	srv := grpc.NewServer()
 	loanServer := &handlers.LoanServer{
-		DB:         loanDB,
-		AccountDB:  accountDB,
-		ExchangeDB: exchangeDB,
+		DB:           loanDB,
+		AccountDB:    accountDB,
+		ExchangeDB:   exchangeDB,
+		EmailClient:  emailClient,
+		ClientClient: clientClient,
 	}
 	pb.RegisterLoanServiceServer(srv, loanServer)
 
