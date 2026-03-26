@@ -45,6 +45,10 @@ func (m *mockPublisher) PublishCardConfirmation(msg queue.CardConfirmationMessag
 	args := m.Called(msg)
 	return args.Error(0)
 }
+func (m *mockPublisher) PublishLoanLatePayment(msg queue.LoanLatePaymentMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
 
 // ---- SendActivationEmail tests ----
 

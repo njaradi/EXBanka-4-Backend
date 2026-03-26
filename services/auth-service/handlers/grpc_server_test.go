@@ -135,6 +135,9 @@ func (m *mockEmailClient) SendAccountCreatedEmail(ctx context.Context, in *pb_em
 func (m *mockEmailClient) SendCardConfirmationEmail(ctx context.Context, in *pb_email.SendCardConfirmationEmailRequest, opts ...grpc.CallOption) (*pb_email.SendCardConfirmationEmailResponse, error) {
 	return &pb_email.SendCardConfirmationEmailResponse{}, nil
 }
+func (m *mockEmailClient) SendLoanLatePaymentEmail(ctx context.Context, in *pb_email.SendLoanLatePaymentEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLoanLatePaymentEmailResponse, error) {
+	return &pb_email.SendLoanLatePaymentEmailResponse{}, nil
+}
 
 type mockClientClient struct {
 	mock.Mock
@@ -378,7 +381,7 @@ func TestActivateAccount_AlreadyActivated(t *testing.T) {
 
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Aktivan: true}}, nil,
+		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Active: true}}, nil,
 	)
 
 	s := newAuthServer(db, empClient, &mockEmailClient{})
@@ -400,7 +403,7 @@ func TestActivateAccount_PasswordMismatch(t *testing.T) {
 
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Aktivan: false}}, nil,
+		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Active: false}}, nil,
 	)
 
 	s := newAuthServer(db, empClient, &mockEmailClient{})
@@ -422,7 +425,7 @@ func TestActivateAccount_InvalidPassword(t *testing.T) {
 
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Aktivan: false}}, nil,
+		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Active: false}}, nil,
 	)
 
 	s := newAuthServer(db, empClient, &mockEmailClient{})
@@ -446,7 +449,7 @@ func TestActivateAccount_HappyPath(t *testing.T) {
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
 		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{
-			Id: 1, Aktivan: false, Email: "emp@example.com", Ime: "John",
+			Id: 1, Active: false, Email: "emp@example.com", FirstName: "John",
 		}}, nil,
 	)
 	empClient.On("ActivateEmployee", mock.Anything, mock.Anything).Return(
@@ -578,7 +581,7 @@ func TestLogin_CredentialsNotFound(t *testing.T) {
 func TestLogin_EmptyPasswordHash(t *testing.T) {
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeCredentials", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: "", Aktivan: true, Dozvole: []string{}}, nil,
+		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: "", Active: true, Permissions: []string{}}, nil,
 	)
 
 	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}}
@@ -591,7 +594,7 @@ func TestLogin_AccountNotActive(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeCredentials", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Aktivan: false, Dozvole: []string{}}, nil,
+		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: false, Permissions: []string{}}, nil,
 	)
 
 	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}}
@@ -604,7 +607,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("OtherPass12"), bcrypt.MinCost)
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeCredentials", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Aktivan: true, Dozvole: []string{}}, nil,
+		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: true, Permissions: []string{}}, nil,
 	)
 
 	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}}
@@ -617,11 +620,11 @@ func TestLogin_HappyPath(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeCredentials", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Aktivan: true, Dozvole: []string{"ADMIN"}}, nil,
+		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: true, Permissions: []string{"ADMIN"}}, nil,
 	)
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
 		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{
-			Id: 1, Email: "user@example.com", Ime: "John", Prezime: "Doe",
+			Id: 1, Email: "user@example.com", FirstName: "John", LastName: "Doe",
 		}}, nil,
 	)
 
@@ -948,7 +951,7 @@ func TestLogin_GetEmployeeByIdError(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeCredentials", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Aktivan: true, Dozvole: []string{}}, nil,
+		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: true, Permissions: []string{}}, nil,
 	)
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
 
@@ -1060,7 +1063,7 @@ func TestActivateAccount_ActivateEmployeeError(t *testing.T) {
 
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
-		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Id: 1, Aktivan: false}}, nil,
+		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Id: 1, Active: false}}, nil,
 	)
 	empClient.On("ActivateEmployee", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "activate failed"))
 
@@ -1306,7 +1309,7 @@ func TestActivateAccount_DeleteUsedTokenFails(t *testing.T) {
 	empClient := &mockEmployeeClient{}
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
 		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{
-			Id: 1, Aktivan: false, Email: "emp@example.com", Ime: "John",
+			Id: 1, Active: false, Email: "emp@example.com", FirstName: "John",
 		}}, nil,
 	)
 	empClient.On("ActivateEmployee", mock.Anything, mock.Anything).Return(
