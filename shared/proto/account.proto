@@ -122,6 +122,12 @@ message GetAllAccountsResponse {
   repeated AccountListItem accounts = 1;
 }
 
+message DeleteAccountRequest {
+  int64 account_id = 1;
+}
+
+message DeleteAccountResponse {}
+
 service AccountService {
   rpc CreateAccount(CreateAccountRequest)     returns (CreateAccountResponse);
   rpc GetMyAccounts(GetMyAccountsRequest)     returns (GetMyAccountsResponse);
@@ -129,4 +135,5 @@ service AccountService {
   rpc RenameAccount(RenameAccountRequest)     returns (RenameAccountResponse);
   rpc GetAllAccounts(GetAllAccountsRequest)       returns (GetAllAccountsResponse);
   rpc UpdateAccountLimits(UpdateAccountLimitsRequest) returns (UpdateAccountLimitsResponse);
+  rpc DeleteAccount(DeleteAccountRequest)     returns (DeleteAccountResponse);
 }

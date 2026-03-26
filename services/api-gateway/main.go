@@ -111,6 +111,7 @@ func main() {
 	r.PUT("/api/accounts/:accountId/name", handlers.RenameAccount(accountClient))
 	r.PUT("/api/accounts/:accountId/limits", middleware.RequireRole("EMPLOYEE"), handlers.UpdateAccountLimits(accountClient))
 	r.POST("/api/accounts/create", middleware.RequireRole("EMPLOYEE"), handlers.CreateAccount(accountClient, cardClient))
+	r.DELETE("/api/accounts/:accountId", middleware.RequireRole("EMPLOYEE"), handlers.DeleteAccount(accountClient))
 	r.POST("/login", handlers.Login(authClient))
 	r.POST("/refresh", handlers.Refresh(authClient))
 	r.POST("/client/login", handlers.ClientLogin(authClient))

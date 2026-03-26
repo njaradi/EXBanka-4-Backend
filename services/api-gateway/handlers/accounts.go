@@ -493,3 +493,25 @@ func CreateAccount(accountClient pb.AccountServiceClient, cardClient pbcard.Card
 		})
 	}
 }
+
+func DeleteAccount(accountClient pb.AccountServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		accountID, err := parseID(c, "accountId")
+		if err != nil {
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		_, err = accountClient.DeleteAccount(ctx, &pb.DeleteAccountRequest{AccountId: accountID})
+		if err != nil {
+			switch status.Code(err) {
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+		c.Status(http.StatusOK)
+	}
+}

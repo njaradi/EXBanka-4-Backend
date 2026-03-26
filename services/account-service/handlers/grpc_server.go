@@ -396,3 +396,15 @@ func (s *AccountServer) UpdateAccountLimits(ctx context.Context, req *pb.UpdateA
 	}
 	return &pb.UpdateAccountLimitsResponse{}, nil
 }
+
+func (s *AccountServer) DeleteAccount(ctx context.Context, req *pb.DeleteAccountRequest) (*pb.DeleteAccountResponse, error) {
+	res, err := s.DB.ExecContext(ctx, `DELETE FROM accounts WHERE id = $1`, req.AccountId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete account: %v", err)
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return nil, status.Errorf(codes.NotFound, "account not found")
+	}
+	return &pb.DeleteAccountResponse{}, nil
+}
