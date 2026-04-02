@@ -288,7 +288,27 @@ func (s *LoanServer) ApproveLoan(ctx context.Context, req *pb.ApproveLoanRequest
 		return nil, status.Errorf(codes.FailedPrecondition, "loan is not in PENDING state")
 	}
 
-	// 2. Disburse amount to account
+	// 2. Resolve bank account for this currency
+	var currencyID int64
+	if err = s.ExchangeDB.QueryRowContext(ctx,
+		`SELECT id FROM currencies WHERE code = $1`, currency,
+	).Scan(&currencyID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to resolve currency %s: %v", currency, err)
+	}
+	var bankAccountNumber string
+	if err = s.AccountDB.QueryRowContext(ctx,
+		`SELECT account_number FROM accounts WHERE account_type = 'BANK' AND currency_id = $1`, currencyID,
+	).Scan(&bankAccountNumber); err != nil {
+		return nil, status.Errorf(codes.Internal, "no bank account found for currency %s: %v", currency, err)
+	}
+
+	// 3. Transfer: deduct from bank account, credit client account
+	_, err = s.AccountDB.ExecContext(ctx, `
+		UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1
+		WHERE account_number = $2`, amount, bankAccountNumber)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to debit bank account: %v", err)
+	}
 	_, err = s.AccountDB.ExecContext(ctx, `
 		UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1
 		WHERE account_number = $2`, amount, accountNumber)

@@ -28,20 +28,15 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 	req.FromAccount = strings.ReplaceAll(req.FromAccount, "-", "")
 	req.RecipientAccount = strings.ReplaceAll(req.RecipientAccount, "-", "")
 
-	// 1. Load fromAccount and verify ownership
+	// 1. Load fromAccount metadata (currency, owner) – no balance read yet
 	var fromID int64
 	var ownerID int64
-	var availableBalance float64
-	var dailyLimit, monthlyLimit sql.NullFloat64
-	var dailySpent, monthlySpent float64
 	var fromCurrencyID int64
 
 	err := s.AccountDB.QueryRowContext(ctx, `
-		SELECT id, owner_id, available_balance,
-		       daily_limit, monthly_limit, daily_spent, monthly_spent, currency_id
+		SELECT id, owner_id, currency_id
 		FROM accounts WHERE account_number = $1`, req.FromAccount,
-	).Scan(&fromID, &ownerID, &availableBalance,
-		&dailyLimit, &monthlyLimit, &dailySpent, &monthlySpent, &fromCurrencyID)
+	).Scan(&fromID, &ownerID, &fromCurrencyID)
 	if err == sql.ErrNoRows {
 		return nil, status.Errorf(codes.NotFound, "source account %s not found", req.FromAccount)
 	}
@@ -52,18 +47,7 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 		return nil, status.Errorf(codes.PermissionDenied, "account does not belong to this client")
 	}
 
-	// 2. Validate funds and limits
-	if availableBalance < req.Amount {
-		return nil, status.Errorf(codes.FailedPrecondition, "insufficient funds")
-	}
-	if dailyLimit.Valid && dailySpent+req.Amount > dailyLimit.Float64 {
-		return nil, status.Errorf(codes.FailedPrecondition, "daily limit exceeded")
-	}
-	if monthlyLimit.Valid && monthlySpent+req.Amount > monthlyLimit.Float64 {
-		return nil, status.Errorf(codes.FailedPrecondition, "monthly limit exceeded")
-	}
-
-	// 3. Check if recipient exists in our system
+	// 2. Check if recipient exists in our system
 	var toCurrencyID int64
 	var toAccountID int64
 	toExists := false
@@ -167,6 +151,27 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback()
+
+	// Lock the source account row and re-read balance/limits atomically.
+	// Any concurrent payment on the same account will block here until we commit.
+	var availableBalance float64
+	var dailyLimit, monthlyLimit sql.NullFloat64
+	var dailySpent, monthlySpent float64
+	if err = tx.QueryRowContext(ctx, `
+		SELECT available_balance, daily_limit, monthly_limit, daily_spent, monthly_spent
+		FROM accounts WHERE id = $1 FOR UPDATE`, fromID,
+	).Scan(&availableBalance, &dailyLimit, &monthlyLimit, &dailySpent, &monthlySpent); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to lock source account: %v", err)
+	}
+	if availableBalance < req.Amount {
+		return nil, status.Errorf(codes.FailedPrecondition, "insufficient funds")
+	}
+	if dailyLimit.Valid && dailySpent+req.Amount > dailyLimit.Float64 {
+		return nil, status.Errorf(codes.FailedPrecondition, "daily limit exceeded")
+	}
+	if monthlyLimit.Valid && monthlySpent+req.Amount > monthlyLimit.Float64 {
+		return nil, status.Errorf(codes.FailedPrecondition, "monthly limit exceeded")
+	}
 
 	// Always debit client
 	_, err = tx.ExecContext(ctx, `
@@ -556,16 +561,15 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 		return nil, status.Error(codes.InvalidArgument, "from and to accounts must be different")
 	}
 
-	// 1. Load fromAccount – verify ownership and balance
+	// 1. Load fromAccount metadata – verify ownership (no balance read yet)
 	var fromID int64
 	var fromOwnerID int64
-	var availableBalance float64
 	var fromCurrencyID int64
 
 	err := s.AccountDB.QueryRowContext(ctx,
-		`SELECT id, owner_id, available_balance, currency_id
+		`SELECT id, owner_id, currency_id
 		 FROM accounts WHERE account_number = $1`, req.FromAccount,
-	).Scan(&fromID, &fromOwnerID, &availableBalance, &fromCurrencyID)
+	).Scan(&fromID, &fromOwnerID, &fromCurrencyID)
 	if err == sql.ErrNoRows {
 		return nil, status.Errorf(codes.NotFound, "source account %s not found", req.FromAccount)
 	}
@@ -593,11 +597,6 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 	}
 	if toOwnerID != req.ClientId {
 		return nil, status.Errorf(codes.PermissionDenied, "destination account does not belong to this client")
-	}
-
-	// 3. Check balance
-	if availableBalance < req.Amount {
-		return nil, status.Error(codes.FailedPrecondition, "insufficient funds")
 	}
 
 	// 4. Determine exchange rate, final amount, and fee
@@ -701,6 +700,18 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback()
+
+	// Lock the source account row and re-read balance atomically.
+	// Any concurrent transfer on the same account will block here until we commit.
+	var availableBalance float64
+	if err = tx.QueryRowContext(ctx, `
+		SELECT available_balance FROM accounts WHERE id = $1 FOR UPDATE`, fromID,
+	).Scan(&availableBalance); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to lock source account: %v", err)
+	}
+	if availableBalance < req.Amount {
+		return nil, status.Error(codes.FailedPrecondition, "insufficient funds")
+	}
 
 	if sameCurrency {
 		if _, err = tx.ExecContext(ctx, `

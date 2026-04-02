@@ -123,6 +123,22 @@ func (s *LoanServer) processInstallment(ctx context.Context, loanID int64, loanN
 		return
 	}
 
+	// Resolve bank account for this currency
+	var currencyID int64
+	if err := s.ExchangeDB.QueryRowContext(ctx,
+		`SELECT id FROM currencies WHERE code = $1`, currency,
+	).Scan(&currencyID); err != nil {
+		log.Printf("loan-service: failed to resolve currency %s for loan %d: %v", currency, loanID, err)
+		return
+	}
+	var bankAccountNumber string
+	if err := s.AccountDB.QueryRowContext(ctx,
+		`SELECT account_number FROM accounts WHERE account_type = 'BANK' AND currency_id = $1`, currencyID,
+	).Scan(&bankAccountNumber); err != nil {
+		log.Printf("loan-service: no bank account for currency %s, loan %d: %v", currency, loanID, err)
+		return
+	}
+
 	// Attempt debit
 	res, err := s.AccountDB.ExecContext(ctx, `
 		UPDATE accounts
@@ -136,6 +152,12 @@ func (s *LoanServer) processInstallment(ctx context.Context, loanID int64, loanN
 	affected, _ := res.RowsAffected()
 
 	if affected > 0 {
+		// Credit bank account with the collected installment
+		if _, err := s.AccountDB.ExecContext(ctx, `
+			UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1
+			WHERE account_number = $2`, amount, bankAccountNumber); err != nil {
+			log.Printf("loan-service: failed to credit bank account for loan %d: %v", loanID, err)
+		}
 		// Success: mark PAID, advance schedule
 		newRemaining := math.Round((remainingDebt-amount)*100) / 100
 		if newRemaining < 0 {
